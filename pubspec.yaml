@@ -3,3 +3,6 @@ description: A new flutter project.
 dependencies:
   flutter:
     sdk: flutter
+  dartson: ">=0.2.0 <0.3.0"
+transformers:
+  - dartson

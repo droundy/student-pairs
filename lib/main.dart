@@ -1,4 +1,9 @@
+import 'dart:io';
+import 'dart:async';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+//import 'package:dartson/dartson.dart';
+//import 'package:dartson/transformers/date_time.dart';
 
 void main() {
   runApp(new MyApp());
@@ -9,7 +14,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return new MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Student Pairs',
       theme: new ThemeData(
         // This is the theme of your application.
         //
@@ -21,7 +26,7 @@ class MyApp extends StatelessWidget {
         // reset back to zero -- the application is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: new MyHomePage(title: 'Flutter Demo'),
+      home: new MyHomePage(title: 'Student Pairs'),
     );
   }
 }
@@ -47,7 +52,34 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
 
-  void _incrementCounter() {
+  @override
+  void initState() {
+    super.initState();
+    _readCounter().then((int value) {
+      setState(() {
+        _counter = value;
+      });
+    });
+  }
+
+  Future<File> _getLocalFile() async {
+    // get the path to the document directory.
+    String dir = (await PathProvider.getApplicationDocumentsDirectory()).path;
+    return new File('$dir/counter.txt');
+  }
+
+  Future<int> _readCounter() async {
+    try {
+      File file = await _getLocalFile();
+      // read the variable as a string from the file.
+      String contents = await file.readAsString();
+      return int.parse(contents);
+    } on FileSystemException {
+      return 0;
+    }
+  }
+
+  Future<Null> _incrementCounter() async {
     setState(() {
       // This call to setState tells the Flutter framework that
       // something has changed in this State, which causes it to rerun
@@ -57,6 +89,11 @@ class _MyHomePageState extends State<MyHomePage> {
       // and so nothing would appear to happen.
       _counter++;
     });
+    // write the variable as a string to the file
+    //var dson = new Dartson.JSON();
+    //dson.addTransformer(new DateTimeParser(), DateTime);
+    //await (await _getLocalFile()).writeAsString(dson.encode(_counter));
+    await (await _getLocalFile()).writeAsString('$_counter');
   }
 
   @override
