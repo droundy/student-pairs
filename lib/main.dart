@@ -1,9 +1,8 @@
 import 'dart:io';
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
-//import 'package:dartson/dartson.dart';
-//import 'package:dartson/transformers/date_time.dart';
 
 void main() {
   runApp(new MyApp());
@@ -73,7 +72,8 @@ class _MyHomePageState extends State<MyHomePage> {
       File file = await _getLocalFile();
       // read the variable as a string from the file.
       String contents = await file.readAsString();
-      return int.parse(contents);
+      // return int.parse(contents);
+      return JSON.decode(contents)[0];
     } on FileSystemException {
       return 0;
     }
@@ -90,10 +90,21 @@ class _MyHomePageState extends State<MyHomePage> {
       _counter++;
     });
     // write the variable as a string to the file
-    //var dson = new Dartson.JSON();
-    //dson.addTransformer(new DateTimeParser(), DateTime);
-    //await (await _getLocalFile()).writeAsString(dson.encode(_counter));
-    await (await _getLocalFile()).writeAsString('$_counter');
+    await (await _getLocalFile()).writeAsString(JSON.encode([_counter]));
+  }
+
+  Future<Null> _decrementCounter() async {
+    setState(() {
+      // This call to setState tells the Flutter framework that
+      // something has changed in this State, which causes it to rerun
+      // the build method below so that the display can reflect the
+      // updated values. If we changed _counter without calling
+      // setState(), then the build method would not be called again,
+      // and so nothing would appear to happen.
+      _counter--;
+    });
+    // write the variable as a string to the file
+    await (await _getLocalFile()).writeAsString(JSON.encode([_counter]));
   }
 
   @override
@@ -104,6 +115,14 @@ class _MyHomePageState extends State<MyHomePage> {
         // was created by the App.build method, and use it to set
         // our appbar title.
         title: new Text(config.title),
+        actions: [
+            new Center(child: new FlatButton(
+            child: new Icon(Icons.arrow_back),
+            onPressed: _decrementCounter)),
+            new Center(child: new FlatButton(
+            child: new Icon(Icons.arrow_forward),
+            onPressed: _incrementCounter)),
+        ],
       ),
       body: new Center(
         child: new Text(
