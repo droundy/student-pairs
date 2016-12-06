@@ -50,6 +50,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
+  int _view = 0;
 
   @override
   void initState() {
@@ -109,6 +110,22 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    Widget body = new Center(child: new Column(
+        children: [
+          new Text(
+            'Button tapped $_counter time${ _counter == 1 ? '' : 's' }.',
+          ),
+          new Text('View $_view'),
+        ],
+      ));
+    Widget studentview = new Center(child: new Column(
+        children: [
+          new Text(
+            'Students tapped $_counter time${ _counter == 1 ? '' : 's' }.',
+          ),
+          new Text('View $_view'),
+        ],
+      ));
     return new Scaffold(
       appBar: new AppBar(
         // Here we take the value from the MyHomePage object that
@@ -124,10 +141,32 @@ class _MyHomePageState extends State<MyHomePage> {
             onPressed: _incrementCounter)),
         ],
       ),
-      body: new Center(
-        child: new Text(
-          'Button tapped $_counter time${ _counter == 1 ? '' : 's' }.',
-        ),
+      body: body,
+      bottomNavigationBar: new BottomNavigationBar(
+      labels: [
+            new DestinationLabel(
+              icon: new Icon(Icons.arrow_back),
+              title: new Text("Students"),
+            ),
+            new DestinationLabel(
+              icon: new Icon(Icons.arrow_forward),
+              title: new Text("Sections"),
+            ),
+            new DestinationLabel(
+              icon: new Icon(Icons.arrow_forward),
+              title: new Text("Days"),
+            ),
+            new DestinationLabel(
+              icon: new Icon(Icons.arrow_forward),
+              title: new Text("Days"),
+            ),
+        ],
+      currentIndex: _view,
+      onTap: (int index) {
+        setState(() {
+          _view = index;
+        });
+       },
       ),
       floatingActionButton: new FloatingActionButton(
         onPressed: _incrementCounter,
