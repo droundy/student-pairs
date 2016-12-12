@@ -67,17 +67,20 @@ class _MyHomePageState extends State<MyHomePage> {
   List<String> _students = [];
   List<String> _sections = [];
   List<Map> _days = [];
+  int _currentDate = 0;
 
   @override
   void initState() {
     super.initState();
-    debugPrint("I am in initState");
     _readState().then((Map state) {
       setState(() {
         _counter = state['counter'];
         _students = state['students'];
         _sections = state['sections'];
         _days = state['days'];
+        if (state.containsKey('currentDate')) {
+          _currentDate = state['currentDate'];
+        }
       });
     });
   }
@@ -97,6 +100,7 @@ class _MyHomePageState extends State<MyHomePage> {
       return JSON.decode(contents);
     } on FileSystemException {
       return {'counter': 0,
+          'currentDate': -1,
           'students': [],
           'sections': [],
           'days': []};
@@ -107,6 +111,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _students.sort();
     await (await _getLocalFile()).writeAsString(JSON.encode({
         'counter': _counter,
+            'currentDate': _currentDate,
             'students': _students,
             'sections': _sections,
             'days': _days,
@@ -116,32 +121,22 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<Null> _incrementCounter() async {
-    debugPrint("I am in _incrementCounter");
-    setState(() {
-      // This call to setState tells the Flutter framework that
-      // something has changed in this State, which causes it to rerun
-      // the build method below so that the display can reflect the
-      // updated values. If we changed _counter without calling
-      // setState(), then the build method would not be called again,
-      // and so nothing would appear to happen.
-      _counter++;
-    });
-    // write the variable as a string to the file
+    setState(() { _counter++; });
     await _writeState();
   }
 
   Future<Null> _decrementCounter() async {
-    setState(() {
-      // This call to setState tells the Flutter framework that
-      // something has changed in this State, which causes it to rerun
-      // the build method below so that the display can reflect the
-      // updated values. If we changed _counter without calling
-      // setState(), then the build method would not be called again,
-      // and so nothing would appear to happen.
-      _counter--;
-    });
-    // write the variable as a string to the file
+    setState(() { _counter--; });
     await _writeState();
+  }
+  _currentDateSetter(int value) {
+    Future<Null> setter() async {
+      setState(() {
+          _currentDate = value;
+        });
+      await _writeState();
+    }
+    return setter;
   }
 
   Future<Null> add() async {
@@ -154,12 +149,6 @@ class _MyHomePageState extends State<MyHomePage> {
         return;
       }
       setState(() {
-          // This call to setState tells the Flutter framework that
-          // something has changed in this State, which causes it to rerun
-          // the build method below so that the display can reflect the
-          // updated values. If we changed _counter without calling
-          // setState(), then the build method would not be called again,
-          // and so nothing would appear to happen.
           _students.add(x);
         });
       // write the variable as a string to the file
@@ -190,85 +179,136 @@ class _MyHomePageState extends State<MyHomePage> {
       break;
     }
   }
+  bool _amViewingDate() {
+    return _currentDate >= 0 && _currentDate < _days.length;
+  }
 
   @override
   Widget build(BuildContext context) {
     Widget body;
-    switch (_view) {
-    case _View.students:
-      List<Widget> ch = _students.map((s) =>
-                                      new Padding(child: new Row(children: <Widget>[new Text(s),
-                                                                                    new FlatButton(child: new Icon(Icons.delete),
-                                                                                                   onPressed: () async {
-                                                                                                     var ok = await confirmDialog(context, 'Really delete student $s?', 'DELETE');
-                                                                                                     if (ok != null && ok) {
-                                                                                                       setState(() {
-                                                                                                           _students.remove(s);
-                                                                                                         });
-                                                                                                       _writeState();
-                                                                                                     }
-                                                                                                   },)],
-                                                                 mainAxisSize: MainAxisSize.max,
-                                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween),
-                                                  padding: const EdgeInsets.all(12.0),)
-                                      ).toList();
-      body = new Block(children: ch);
-      break;
-    case _View.sections:
-      List<Widget> ch = _sections.map((s) =>
-                                      new Padding(child: new Row(children: <Widget>[new Text(s),
-                                                                                    new FlatButton(child: new Icon(Icons.delete),
-                                                                                                   onPressed: () async {
-                                                                                                     var ok = await confirmDialog(context, 'Really delete section $s?', 'DELETE');
-                                                                                                     if (ok != null && ok) {
-                                                                                                       setState(() {
-                                                                                                           _sections.remove(s);
-                                                                                                         });
-                                                                                                       _writeState();
-                                                                                                     }
-                                                                                                   },)],
-                                                                 mainAxisSize: MainAxisSize.max,
-                                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween),
-                                                  padding: const EdgeInsets.all(12.0),)
-                                      ).toList();
-      body = new Block(children: ch);
-      break;
-    case _View.days:
-      List<Widget> ch = _days.map((d) =>
-                                      new Padding(child: new Row(children: <Widget>[new Text(d['date']),
-                                                                                    new FlatButton(child: new Icon(Icons.delete),
-                                                                                                   onPressed: () async {
-                                                                                                     var ok = await confirmDialog(context, "Really delete day ${d['date']}}?", 'DELETE');
-                                                                                                     if (ok != null && ok) {
-                                                                                                       setState(() {
-                                                                                                           _days.remove(d);
-                                                                                                         });
-                                                                                                       _writeState();
-                                                                                                     }
-                                                                                                   },)],
-                                                                 mainAxisSize: MainAxisSize.max,
-                                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween),
-                                                  padding: const EdgeInsets.all(12.0),)
-                                      ).toList();
-      body = new Block(children: ch);
-      break;
-    default:
-      body = new Center(child: new Text('ERROR $_view'));
-      break;
+    if (_amViewingDate()) {
+      // This is where we edit the plan for a given class day
+      switch (_view) {
+      case _View.students:
+        List<Widget> ch = [];
+        for (int i=0; i<_days.length; i++) {
+          String s = _students[i];
+          Widget w = new Padding(child: new Row(children: <Widget>[new Text(s),
+                                                                   new PopupMenuButton(child: new Text('menu here'),
+                                                                                       itemBuilder: (BuildContext context) =>
+                                                                                       <PopupMenuItem>[new PopupMenuItem(value: 0,
+                                                                                                                         child: new Text('hello')),
+                                                                                                       new PopupMenuItem(value: 1,
+                                                                                                                         child: new Text('goodbye')),]
+                                                                                       )],
+                                                mainAxisSize: MainAxisSize.max,
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween),
+                                 padding: const EdgeInsets.all(12.0),);
+          ch.add(w);
+        }
+        body = new Block(children: ch);
+        break;
+      case _View.sections:
+        List<Widget> ch = _sections.map((s) =>
+                                        new Padding(child: new Row(children: <Widget>[new Text(s)],
+                                                                   mainAxisSize: MainAxisSize.max,
+                                                                   mainAxisAlignment: MainAxisAlignment.spaceBetween),
+                                                    padding: const EdgeInsets.all(12.0),)
+                                        ).toList();
+        body = new Block(children: ch);
+        break;
+      case _View.days:
+        List<Widget> ch = [];
+        for (int i=0; i<_days.length; i++) {
+          Widget w = new Padding(child: new Row(children: <Widget>[new FlatButton(child: new Text(_days[i]['date']),
+                                                                                  onPressed: _currentDateSetter(i))],
+                                                mainAxisSize: MainAxisSize.max,
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween),
+                                 padding: const EdgeInsets.all(12.0),);
+          ch.add(w);
+        }
+        body = new Block(children: ch);
+        break;
+      }
+    } else {
+      // Here is where we edit the possibilities
+      switch (_view) {
+      case _View.students:
+        List<Widget> ch = _students.map((s) =>
+                                        new Padding(child: new Row(children: <Widget>[new Text(s),
+                                                                                      new FlatButton(child: new Icon(Icons.delete),
+                                                                                                     onPressed: () async {
+                                                                                                       var ok = await confirmDialog(context, 'Really delete student $s?', 'DELETE');
+                                                                                                       if (ok != null && ok) {
+                                                                                                         setState(() {
+                                                                                                             _students.remove(s);
+                                                                                                           });
+                                                                                                         _writeState();
+                                                                                                       }
+                                                                                                     },)],
+                                                                   mainAxisSize: MainAxisSize.max,
+                                                                   mainAxisAlignment: MainAxisAlignment.spaceBetween),
+                                                    padding: const EdgeInsets.all(12.0),)
+                                        ).toList();
+        body = new Block(children: ch);
+        break;
+      case _View.sections:
+        List<Widget> ch = _sections.map((s) =>
+                                        new Padding(child: new Row(children: <Widget>[new Text(s),
+                                                                                      new FlatButton(child: new Icon(Icons.delete),
+                                                                                                     onPressed: () async {
+                                                                                                       var ok = await confirmDialog(context, 'Really delete section $s?', 'DELETE');
+                                                                                                       if (ok != null && ok) {
+                                                                                                         setState(() {
+                                                                                                             _sections.remove(s);
+                                                                                                           });
+                                                                                                         _writeState();
+                                                                                                       }
+                                                                                                     },)],
+                                                                   mainAxisSize: MainAxisSize.max,
+                                                                   mainAxisAlignment: MainAxisAlignment.spaceBetween),
+                                                    padding: const EdgeInsets.all(12.0),)
+                                        ).toList();
+        body = new Block(children: ch);
+        break;
+      case _View.days:
+        List<Widget> ch = [];
+        for (int i=0; i<_days.length; i++) {
+          Widget w = new Padding(child: new Row(children: <Widget>[new FlatButton(child: new Text(_days[i]['date']),
+                                                                                  onPressed: _currentDateSetter(i)),
+                                                                   new FlatButton(child: new Icon(Icons.delete),
+                                                                                  onPressed: () async {
+                                                                                    var ok = await confirmDialog(context, "Really delete day ${_days[i]['date']}}?", 'DELETE');
+                                                                                    if (ok != null && ok) {
+                                                                                      setState(() {
+                                                                                          _days.removeAt(i);
+                                                                                        });
+                                                                                      _writeState();
+                                                                                    }
+                                                                                  },)],
+                                                mainAxisSize: MainAxisSize.max,
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween),
+                                 padding: const EdgeInsets.all(12.0),);
+          ch.add(w);
+        }
+        body = new Block(children: ch);
+        break;
+      }
+    }
+    String title = config.title;
+    if (_amViewingDate()) {
+      title = _days[_currentDate]['date'];
     }
     return new Scaffold(
       appBar: new AppBar(
         // Here we take the value from the MyHomePage object that
         // was created by the App.build method, and use it to set
         // our appbar title.
-        title: new Text(config.title),
+        title: new Text(title),
         actions: [
             new Center(child: new FlatButton(
-            child: new Icon(Icons.arrow_back),
-            onPressed: _decrementCounter)),
-            new Center(child: new FlatButton(
-            child: new Icon(Icons.arrow_forward),
-            onPressed: _incrementCounter)),
+            child: new Icon(Icons.home),
+            onPressed: _currentDateSetter(-1))),
         ],
       ),
       body: body,
