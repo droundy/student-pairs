@@ -236,6 +236,78 @@ class _MyHomePageState extends State<MyHomePage> {
     return '-';
   }
 
+  Widget _sectionMenuForStudent(String s) {
+    List<String> section_options = new List.from(_sections)..add('absent');
+    return alternativesMenu(section_options, _todayStudentSection(s),
+                            (n) {
+                              _writeState (() {
+                                  _todayStudent(s)['section'] = n;
+                                });
+                            });
+  }
+
+  Widget _teamMenuForStudent(String s) {
+    List<String> team_options = new List.from(_teams)..add('-');
+    return alternativesMenu(team_options, _todayStudentTeam(s),
+                            (n) {
+                              _writeState (() {
+                                  _todayStudent(s)['team'] = n;
+                                });
+                            });
+  }
+
+  Widget _studentTable(List<String> students_to_list) {
+        List<DataColumn> columns = <DataColumn>[new DataColumn(label: studentIcon),
+                                                new DataColumn(label: sectionIcon),
+                                                new DataColumn(label: teamIcon),
+                                                ];
+        List<DataRow> rows = [];
+        for (int i=0; i<students_to_list.length; i++) {
+          String s = students_to_list[i];
+          String s_section = _todayStudentSection(s);
+          String s_team = _todayStudentTeam(s);
+          rows.add(new DataRow(cells: <DataCell>[new DataCell(new Text(s)),
+                                                 new DataCell(_sectionMenuForStudent(s)),
+                                                 new DataCell(_teamMenuForStudent(s)),
+                                                 ]));
+        }
+        return new DataTable(columns: columns,
+                             rows: rows);
+  }
+
+  Widget _teamTable(String section) {
+    List<DataColumn> columns = <DataColumn>[new DataColumn(label: teamIcon),
+                                            new DataColumn(label: new Icon(Icons.person)),
+                                            new DataColumn(label: new Icon(Icons.person)),
+                                            ];
+    List<DataRow> rows = [];
+    Map teams = {};
+    for (int i=0; i<_students.length; i++) {
+      String s = _students[i];
+      if (_todayStudentSection(s) == section) {
+        String t = _todayStudentTeam(s);
+        if (teams.containsKey(t)) {
+          teams[t].add(s);
+        } else {
+          teams[t] = [s];
+        }
+      }
+    }
+    teams.forEach((team,students) {
+        String s1 = students[0];
+        String s2 = '-';
+        if (students.length > 1) {
+          s2 = students[1];
+        }
+        rows.add(new DataRow(cells: <DataCell>[new DataCell(new Text(team)),
+                                               new DataCell(new Text(s1)),
+                                               new DataCell(new Text(s2)),
+                                               ]));
+      });
+    return new DataTable(columns: columns,
+                         rows: rows);
+  }
+
   @override
   Widget build(BuildContext context) {
     Widget body;
@@ -243,52 +315,24 @@ class _MyHomePageState extends State<MyHomePage> {
       // This is where we edit the plan for a given class day
       switch (_view) {
       case _View.students:
-        List<String> section_options = new List.from(_sections)..add('absent');
-        List<String> team_options = new List.from(_teams)..add('unknown');
-        List<DataColumn> columns = <DataColumn>[new DataColumn(label: studentIcon),
-                                                new DataColumn(label: sectionIcon),
-                                                new DataColumn(label: teamIcon),
-                                                ];
-        List<DataRow> rows = [];
-        for (int i=0; i<_students.length; i++) {
-          String s = _students[i];
-          Map today = _todayStudent(s);
-          String s_section = _todayStudentSection(s);
-          String s_team = _todayStudentTeam(s);
-          rows.add(new DataRow(cells: <DataCell>[new DataCell(new Text(s)),
-                                                 new DataCell(alternativesMenu(section_options, s_section, (n) {
-                                                       _writeState (() {
-                                                           today['section'] = n;
-                                                           debugPrint('wrote section $s as $n');
-                                                         });
-                                                     })),
-                                                 new DataCell(alternativesMenu(team_options, s_team, (n) {
-                                                       _writeState (() {
-                                                           today['team'] = n;
-                                                         });
-                                                     })),
-                                                 ]));
-        }
-        body = new Block(children: <Widget>[new DataTable(columns: columns,
-                                                          rows: rows)]);
+        body = new Block(children: <Widget>[_studentTable(_students)]);
         break;
       case _View.sections:
-        List<Widget> ch = _sections.map((s) =>
-                                        new Padding(child: new Row(children: <Widget>[new Text(s)],
-                                                                   mainAxisSize: MainAxisSize.max,
-                                                                   mainAxisAlignment: MainAxisAlignment.spaceBetween),
-                                                    padding: const EdgeInsets.all(12.0),)
-                                        ).toList();
-        body = new Block(children: ch);
+        List<Widget> tables = [];
+        for (int i=0;i<_sections.length;i++) {
+          tables.add(_studentTable(new List.from(_students.where((s) => _todayStudentSection(s) == _sections[i]))));
+        }
+        tables.add(_studentTable(new List.from(_students.where((s) => _todayStudentSection(s) == 'absent'))));
+        tables.add(_studentTable(new List.from(_students.where((s) => _todayStudentSection(s) == '-'))));
+        body = new Block(children: tables);
         break;
       case _View.teams:
-        List<Widget> ch = _teams.map((s) =>
-                                     new Padding(child: new Row(children: <Widget>[new Text(s)],
-                                                                mainAxisSize: MainAxisSize.max,
-                                                                mainAxisAlignment: MainAxisAlignment.spaceBetween),
-                                                 padding: const EdgeInsets.all(12.0),)
-                                     ).toList();
-        body = new Block(children: ch);
+        List<Widget> tables = [];
+        for (int i=0;i<_sections.length;i++) {
+          tables.add(new Text(_sections[i]));
+          tables.add(_teamTable(_sections[i]));
+        }
+        body = new Block(children: tables);
         break;
       case _View.days:
         List<Widget> ch = [];
@@ -381,22 +425,22 @@ class _MyHomePageState extends State<MyHomePage> {
         break;
       }
     }
-    String title = config.title;
+    String title = 'manage lists';
     if (_amViewingDate()) {
       title = _days[_currentDate]['date'];
     }
-    return new Scaffold(
-      appBar: new AppBar(
-        // Here we take the value from the MyHomePage object that
-        // was created by the App.build method, and use it to set
-        // our appbar title.
-        title: new Text(title),
-        actions: [
-            new Center(child: new FlatButton(
-            child: new Icon(Icons.home),
-            onPressed: _currentDateSetter(-1))),
-        ],
-      ),
+    List<String> day_options = new List.from(_days.map((d) => d['date']))..insert(0, 'manage lists');
+    return new Scaffold(appBar: new AppBar(title: alternativesMenu(day_options, title,
+                                                                   (String s) async {
+                                                                     await _writeState(() { _currentDate = day_options.indexOf(s) - 1; });
+                                                                   }),
+                         // title: new Text(title),
+                         actions: [
+                                   new Center(child: new FlatButton(
+                                                                    child: new Icon(Icons.home),
+                                                                    onPressed: _currentDateSetter(-1))),
+                                   ],
+                         ),
       body: body,
       bottomNavigationBar: new BottomNavigationBar(
       labels: [
