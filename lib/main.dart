@@ -203,21 +203,29 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     return d[student];
   }
-  Map _todayStudent(String student) {
-    Map today = _today();
-    if (today == null) return null;
-    if (!today.containsKey('students')) {
-      today['students'] = {};
+
+  Map _lookupDay(String day) {
+    for (int i=0; i<_days.length; i++) {
+      if (_days[i].contains('date') && _days[i]['date'] == day) {
+        return _days[i];
+      }
     }
-    Map students = today['students'];
+  }
+
+  Map _todayStudent(String student, [Map day]) {
+    if (day == null) day = _today();
+    if (!day.containsKey('students')) {
+      day['students'] = {};
+    }
+    Map students = day['students'];
     if (!students.containsKey(student)) {
       students[student] = {};
     }
     return students[student];
   }
 
-  String _todayStudentSection(String student) {
-    Map today = _todayStudent(student);
+  String _todayStudentSection(String student, [Map today]) {
+    today = _todayStudent(student, today);
     if (today != null && today.containsKey('section')) {
       return today['section'];
     }
@@ -226,14 +234,91 @@ class _MyHomePageState extends State<MyHomePage> {
     return '-';
   }
 
-  String _todayStudentTeam(String student) {
-    Map today = _todayStudent(student);
+  String _todayStudentTeam(String student, [Map today]) {
+    today = _todayStudent(student, today);
     if (today != null && today.containsKey('team')) {
       return today['team'];
     }
     Map d = _studentDefault(student);
     if (d.containsKey('team')) return d['team'];
     return '-';
+  }
+
+  String _findPartner(String student, [Map day]) {
+    if (day == null) day = _today();
+    String team = _todayStudentTeam(student, day);
+    String section = _todayStudentSection(student, day);
+
+    for (int i=0; i<_students.length; i++) {
+      String s = _students[i];
+      if (s != student && _todayStudentSection(s, day) == section && _todayStudentTeam(s, day) == team) return s;
+    }
+  }
+
+  Map _teamsForSection(String section) {
+    Map teams = {};
+    for (int i=0; i<_students.length; i++) {
+      String s = _students[i];
+      if (_todayStudentSection(s) == section) {
+        String t = _todayStudentTeam(s);
+        if (_teams.contains(t)) {
+          if (teams.containsKey(t)) {
+            teams[t].add(s);
+          } else {
+            teams[t] = [s];
+          }
+        }
+      }
+    }
+    return teams;
+  }
+
+  List<String> _possiblePartnersForStudent(String student, [Map day]) {
+    if (day == null) day = _today();
+    String section = _todayStudentSection(student);
+    if (!_sections.contains(section)) return Set();
+    List<String> partners = new List.from(_students.where((s) => _todayStudentSection(s) == section));
+    partners.remove(student);
+
+    // remove students who already have partners
+    for (String p in new List.from(partners)) {
+      if (_teams.contains(_todayStudentTeam(p, day))) partners.remove(p);
+    }
+    String current = _findPartner(student, day);
+    if (current != null) partners.add(current);
+    for (Map past in _days.skip(1)) {
+      if (past == day) return partners;
+      String p = _findPartner(student, past);
+      if (p != null) partners.remove(p);
+    }
+  }
+
+  void _fixUpSection(String section) {
+    Map teams = _teamsForSection(section);
+    List<String> students = new List.from(_students.where((s) => _todayStudentSection(s) == _sections[i]));
+    List<String> students_handled = new List.from([]);
+    List<String> students_remaining = new List.from(students);
+    teams.forEach((t,stu) {
+        for (String s in stu) {
+          students_handled.add(s);
+          students_remaining.remove(s);
+        }
+      });
+  }
+
+  void _fixUpSectionErrors(String section) {
+    Map teams = _teamsForSection(section);
+    teams.forEach((t,stu) {
+        for (String s in _students) {
+          if (_todayStudentTeam(s) == t && _todayStudentSection(s) != section) {
+            _todayStudent(s).remove('team');
+          }
+        }
+        while (stu.length > 2) {
+          _todayStudent(stu[0]).remove('team');
+          stu.removeAt(0);
+        }
+      });
   }
 
   Widget _sectionMenuForStudent(String s) {
@@ -256,10 +341,49 @@ class _MyHomePageState extends State<MyHomePage> {
                             });
   }
 
+  List<Widget> _studentMenusForTeam(String section, String team, List<String> currentStudents) {
+    List<String> possibleStudents = new List.from(_students.where((s) => _todayStudentSection(s) == section));
+    for (String p in new List.from(possibleStudents)) {
+      String pteam = _todayStudentTeam(p);
+      if (pteam != team && _teams.contains(pteam)) possibleStudents.remove(p);
+    }
+
+    List<String> allow_removal(List<String> o) {
+      return new List.from(o)..add('remove');
+    }
+    set_student([String other]) {
+      Future<Null> setter(String newstudent) async {
+        await _writeState (() {
+            for (String x in _students) {
+              if (_todayStudentTeam(x) == team) {
+                _todayStudent(x).remove('team');
+              }
+            }
+            _todayStudent(newstudent)['team'] = team;
+            if (other != null) _todayStudent(other)['team'] = team;
+          });
+      }
+      return setter;
+    }
+
+    if (currentStudents.length == 0) {
+      return [alternativesMenu(possibleStudents, '-', set_student()),
+              new Text('')];
+    }
+    List<String> student_options = new List.from(_possiblePartnersForStudent(currentStudents[0]));
+    if (currentStudents.length == 1) {
+      String s = currentStudents[0];
+      return [alternativesMenu(allow_removal(possibleStudents), s, set_student()),
+              alternativesMenu(student_options, null, set_student(s)),];
+    }
+    return [alternativesMenu(allow_removal(_possiblePartnersForStudent(currentStudents[1])), currentStudents[0], set_student(currentStudents[1])),
+            alternativesMenu(allow_removal(_possiblePartnersForStudent(currentStudents[0])), currentStudents[1], set_student(currentStudents[0])),];
+  }
+
   Widget _studentTable(List<String> students_to_list) {
         List<DataColumn> columns = <DataColumn>[new DataColumn(label: studentIcon),
                                                 new DataColumn(label: sectionIcon),
-                                                new DataColumn(label: teamIcon),
+                                                 new DataColumn(label: teamIcon),
                                                 ];
         List<DataRow> rows = [];
         for (int i=0; i<students_to_list.length; i++) {
@@ -281,27 +405,11 @@ class _MyHomePageState extends State<MyHomePage> {
                                             new DataColumn(label: new Icon(Icons.person)),
                                             ];
     List<DataRow> rows = [];
-    Map teams = {};
-    for (int i=0; i<_students.length; i++) {
-      String s = _students[i];
-      if (_todayStudentSection(s) == section) {
-        String t = _todayStudentTeam(s);
-        if (teams.containsKey(t)) {
-          teams[t].add(s);
-        } else {
-          teams[t] = [s];
-        }
-      }
-    }
-    teams.forEach((team,students) {
-        String s1 = students[0];
-        String s2 = '-';
-        if (students.length > 1) {
-          s2 = students[1];
-        }
+    _teamsForSection(section).forEach((team,students) {
+        List<Widget> student_menus = _studentMenusForTeam(section, team, students);
         rows.add(new DataRow(cells: <DataCell>[new DataCell(new Text(team)),
-                                               new DataCell(new Text(s1)),
-                                               new DataCell(new Text(s2)),
+                                               new DataCell(student_menus[0]),
+                                               new DataCell(student_menus[1]),
                                                ]));
       });
     return new DataTable(columns: columns,
@@ -312,6 +420,9 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     Widget body;
     if (_amViewingDate()) {
+      for (String section in _sections) {
+        _fixUpSectionErrors(section);
+      }
       // This is where we edit the plan for a given class day
       switch (_view) {
       case _View.students:
@@ -329,7 +440,7 @@ class _MyHomePageState extends State<MyHomePage> {
       case _View.teams:
         List<Widget> tables = [];
         for (int i=0;i<_sections.length;i++) {
-          tables.add(new Text(_sections[i]));
+          tables.add(new Center(child: new Text(_sections[i])));
           tables.add(_teamTable(_sections[i]));
         }
         body = new Block(children: tables);
@@ -553,15 +664,18 @@ Future<bool> confirmDialog(BuildContext context, String title, String action) as
                     );
 }
 
+final menuIcon = new Icon(Icons.more_vert);
+
 Widget alternativesMenu(List<String> items, String current, void onchange(String newval)) {
+  if (items.length == 0) return new Text('');
   List<PopupMenuItem> pmis = [];
   for (int i=0;i<items.length;i++) {
     pmis.add(new PopupMenuItem<String>(value: items[i],
                                        child: new Text(items[i])));
   }
-  Widget cw = new Text(current);
-  if (current == '-') {
-    cw = new Icon(Icons.more_vert);
+  Widget cw = menuIcon;
+  if (current != '-' && current != null) {
+    cw = new Text(current);
   }
   return new PopupMenuButton<String>(child: cw,
                                      itemBuilder: (BuildContext context) => pmis,
