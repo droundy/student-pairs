@@ -111,17 +111,27 @@ class _MyHomePageState extends State<MyHomePage> {
           'days': []};
     }
   }
+  String _jsonState() {
+    _students.sort();
+    return JSON.encode({
+      'currentDate': _currentDate,
+      'students': _students,
+      'sections': _sections,
+      'teams': _teams,
+      'days': _days,
+    });
+  }
   Future<Null> _writeState(void setit()) async {
     setState(setit);
     // write the variable as a string to the file
     _students.sort();
     await (await _getLocalFile()).writeAsString(JSON.encode({
-            'currentDate': _currentDate,
-            'students': _students,
-            'sections': _sections,
-            'teams': _teams,
-            'days': _days,
-            }));
+      'currentDate': _currentDate,
+      'students': _students,
+      'sections': _sections,
+      'teams': _teams,
+      'days': _days,
+    }));
     Map test = await _readState();
     debugPrint('my file is $test');
   }
@@ -550,8 +560,8 @@ class _MyHomePageState extends State<MyHomePage> {
                          // title: new Text(title),
                          actions: [
                                    new Center(child: new FlatButton(
-                                                                    child: new Icon(Icons.home),
-                                                                    onPressed: _currentDateSetter(-1))),
+                                           child: new Icon(Icons.share),
+                                           onPressed: () { share(_jsonState()); }))
                                    ],
                          ),
       body: body,
