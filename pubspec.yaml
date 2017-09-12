@@ -4,6 +4,8 @@ description: A new Flutter project.
 dependencies:
   flutter:
     sdk: flutter
+  share: "^0.2.1"
+  path_provider: "^0.2.1+1"
 
 dev_dependencies:
   flutter_test:

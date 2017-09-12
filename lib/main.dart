@@ -4,6 +4,9 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 
+import 'package:path_provider/path_provider.dart';
+import 'package:share/share.dart';
+
 void main() {
   runApp(new MyApp());
 }
@@ -89,7 +92,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<File> _getLocalFile() async {
     // get the path to the document directory.
-    String dir = (await PathProvider.getApplicationDocumentsDirectory()).path;
+    String dir = (await getApplicationDocumentsDirectory()).path;
     return new File('$dir/student-pairs.json');
   }
 
