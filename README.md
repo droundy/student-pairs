@@ -1,6 +1,6 @@
 # student_pairs
 
-A new flutter project.
+A new Flutter project.
 
 ## Getting Started
 

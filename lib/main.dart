@@ -135,9 +135,8 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<Null> add() async {
     switch (_view) {
     case _View.students:
-      var x = await textInputDialog(context,
-                            'Add student',
-                            );
+      var x = await textInputDialog(context, 'Add student');
+      print('Added student "$x"');
       if (x == null) {
         return;
       }
@@ -426,7 +425,7 @@ class _MyHomePageState extends State<MyHomePage> {
       // This is where we edit the plan for a given class day
       switch (_view) {
       case _View.students:
-        body = new Block(children: <Widget>[_studentTable(_students)]);
+        body = new Column(children: <Widget>[_studentTable(_students)]);
         break;
       case _View.sections:
         List<Widget> tables = [];
@@ -435,7 +434,7 @@ class _MyHomePageState extends State<MyHomePage> {
         }
         tables.add(_studentTable(new List.from(_students.where((s) => _todayStudentSection(s) == 'absent'))));
         tables.add(_studentTable(new List.from(_students.where((s) => _todayStudentSection(s) == '-'))));
-        body = new Block(children: tables);
+        body = new Column(children: tables);
         break;
       case _View.teams:
         List<Widget> tables = [];
@@ -443,7 +442,7 @@ class _MyHomePageState extends State<MyHomePage> {
           tables.add(new Center(child: new Text(_sections[i])));
           tables.add(_teamTable(_sections[i]));
         }
-        body = new Block(children: tables);
+        body = new Column(children: tables);
         break;
       case _View.days:
         List<Widget> ch = [];
@@ -455,7 +454,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                  padding: const EdgeInsets.all(12.0),);
           ch.add(w);
         }
-        body = new Block(children: ch);
+        body = new Column(children: ch);
         break;
       }
     } else {
@@ -472,7 +471,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween),
                                                     padding: const EdgeInsets.all(12.0),)
                                         ).toList();
-        body = new Block(children: ch);
+        body = new Column(children: ch);
         break;
       case _View.sections:
         List<Widget> ch = _sections.map((s) =>
@@ -490,7 +489,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween),
                                                     padding: const EdgeInsets.all(12.0),)
                                         ).toList();
-        body = new Block(children: ch);
+        body = new Column(children: ch);
         break;
       case _View.days:
         List<Widget> ch = [];
@@ -511,7 +510,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                  padding: const EdgeInsets.all(12.0),);
           ch.add(w);
         }
-        body = new Block(children: ch);
+        body = new Column(children: ch);
         break;
       case _View.teams:
         List<Widget> ch = [];
@@ -532,7 +531,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                  padding: const EdgeInsets.all(12.0),);
           ch.add(w);
         }
-        body = new Block(children: ch);
+        body = new Column(children: ch);
         break;
       }
     }
@@ -554,20 +553,20 @@ class _MyHomePageState extends State<MyHomePage> {
                          ),
       body: body,
       bottomNavigationBar: new BottomNavigationBar(
-      labels: [
-            new DestinationLabel(
+      items: [
+            new BottomNavigationBarItem(
               icon: studentIcon,
               title: new Text("Students"),
             ),
-            new DestinationLabel(
+            new BottomNavigationBarItem(
               icon: sectionIcon,
               title: new Text("Sections"),
             ),
-            new DestinationLabel(
+            new BottomNavigationBarItem(
               icon: new Icon(Icons.restaurant),
               title: new Text("Teams"),
             ),
-            new DestinationLabel(
+            new BottomNavigationBarItem(
               icon: dayIcon,
               title: new Text("Days"),
             ),
@@ -616,31 +615,30 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 Future<String> textInputDialog(BuildContext context, String title) async {
-  InputValue myinput = new InputValue(text: '');
   String foo;
   return showDialog(context: context,
                     child: new AlertDialog(title: new Text(title),
-                                           content: new Input(value: myinput,
-                                                              onChanged: (InputValue newval) {
-                                                                foo = newval.text;
-                                                              },
-                                                              onSubmitted: (InputValue newval) {
-                                                                Navigator.pop(context, newval.text);
-                                                              }),
+                                           content: new TextField(
+                                               onChanged: (String newval) {
+                                                 foo = newval;
+                                               },
+                                               onSubmitted: (String newval) {
+                                                 Navigator.pop(context, newval);
+                                               }),
                                            actions: <Widget>[
-                                                        new FlatButton(
-                                                                       child: new Text('CANCEL'),
-                                                                       onPressed: () {
-                                                                         Navigator.pop(context, null);
-                                                                       }
-                                                                       ),
-                                                        new FlatButton(
-                                                                       child: new Text('ADD'),
-                                                                       onPressed: () {
-                                                                         Navigator.pop(context, foo);
-                                                                       }
-                                                                       ),
-                                                        ]),
+                                               new FlatButton(
+                                                              child: new Text('CANCEL'),
+                                                              onPressed: () {
+                                                                Navigator.pop(context, null);
+                                                              }
+                                                              ),
+                                               new FlatButton(
+                                                              child: new Text('ADD'),
+                                                              onPressed: () {
+                                                                Navigator.pop(context, foo);
+                                                              }
+                                                              ),
+                                               ]),
                     );
 }
 
