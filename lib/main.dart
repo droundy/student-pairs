@@ -438,7 +438,7 @@ class _MyHomePageState extends State<MyHomePage> {
       // This is where we edit the plan for a given class day
       switch (_view) {
       case _View.students:
-        body = new Column(children: <Widget>[_studentTable(_students)]);
+        body = new ListView(children: <Widget>[_studentTable(_students)]);
         break;
       case _View.sections:
         List<Widget> tables = [];
@@ -447,7 +447,7 @@ class _MyHomePageState extends State<MyHomePage> {
         }
         tables.add(_studentTable(new List.from(_students.where((s) => _todayStudentSection(s) == 'absent'))));
         tables.add(_studentTable(new List.from(_students.where((s) => _todayStudentSection(s) == '-'))));
-        body = new Column(children: tables);
+        body = new ListView(children: tables);
         break;
       case _View.teams:
         List<Widget> tables = [];
@@ -455,7 +455,7 @@ class _MyHomePageState extends State<MyHomePage> {
           tables.add(new Center(child: new Text(_sections[i])));
           tables.add(_teamTable(_sections[i]));
         }
-        body = new Column(children: tables);
+        body = new ListView(children: tables);
         break;
       case _View.days:
         List<Widget> ch = [];
@@ -467,7 +467,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                  padding: const EdgeInsets.all(12.0),);
           ch.add(w);
         }
-        body = new Column(children: ch);
+        body = new ListView(children: ch);
         break;
       }
     } else {
@@ -484,7 +484,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween),
                                                     padding: const EdgeInsets.all(12.0),)
                                         ).toList();
-        body = new Column(children: ch);
+        body = new ListView(children: ch);
         break;
       case _View.sections:
         List<Widget> ch = _sections.map((s) =>
@@ -502,7 +502,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween),
                                                     padding: const EdgeInsets.all(12.0),)
                                         ).toList();
-        body = new Column(children: ch);
+        body = new ListView(children: ch);
         break;
       case _View.days:
         List<Widget> ch = [];
@@ -523,7 +523,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                  padding: const EdgeInsets.all(12.0),);
           ch.add(w);
         }
-        body = new Column(children: ch);
+        body = new ListView(children: ch);
         break;
       case _View.teams:
         List<Widget> ch = [];
@@ -544,7 +544,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                  padding: const EdgeInsets.all(12.0),);
           ch.add(w);
         }
-        body = new Column(children: ch);
+        body = new ListView(children: ch);
         break;
       }
     }
