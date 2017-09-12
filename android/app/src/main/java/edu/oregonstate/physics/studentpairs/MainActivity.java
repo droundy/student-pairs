@@ -1,4 +1,4 @@
-package com.yourcompany.studentpairs;
+package edu.oregonstate.physics.studentpairs;
 
 import android.os.Bundle;
 
