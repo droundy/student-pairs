@@ -98,6 +98,9 @@ class _MyHomePageState extends State<MyHomePage> {
     assert(_user.uid != null);
     assert(!_user.isAnonymous);
     assert(await _user.getToken() != null);
+    final user_ref = FirebaseDatabase.instance.reference().child('users').child(_user.uid);
+    user_ref.child('displayName').set(_user.displayName);
+    user_ref.child('email').set(_user.email);
     print('userid for ${_user.displayName} is ${_user.uid}');
     _courseNameRef = FirebaseDatabase.instance.reference().child('users').child(_user.uid).child('coursename');
     _courseNameRef.keepSynced(true);
