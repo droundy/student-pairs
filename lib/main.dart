@@ -80,9 +80,12 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Map> _days = [];
   int _currentDate = 0;
   FirebaseUser _user = null;
-  DatabaseReference _coursenameRef = null;
-  StreamSubscription<Event> _coursenameSubscription;
+  DatabaseReference _courseNameRef = null;
+  StreamSubscription<Event> _courseNameSubscription;
   String _courseName;
+
+  DatabaseReference _courseRef = null;
+  StreamSubscription<Event> _courseSubscription;
 
   Future<FirebaseUser> _signInWithGoogle() async {
     final GoogleSignInAccount googleUser = await _googleSignIn.signIn();
@@ -96,12 +99,36 @@ class _MyHomePageState extends State<MyHomePage> {
     assert(!_user.isAnonymous);
     assert(await _user.getToken() != null);
     print('userid for ${_user.displayName} is ${_user.uid}');
-    _coursenameRef = FirebaseDatabase.instance.reference().child('users').child(_user.uid).child('coursename');
-    _coursenameRef.keepSynced(true);
-    _coursenameSubscription = _coursenameRef.onValue.listen((Event event) {
+    _courseNameRef = FirebaseDatabase.instance.reference().child('users').child(_user.uid).child('coursename');
+    _courseNameRef.keepSynced(true);
+    _courseNameSubscription = _courseNameRef.onValue.listen((Event event) {
       setState(() {
         _courseName = event.snapshot.value;
-        print('coursename is now $_courseName');
+        print('courseName is now $_courseName');
+        if (_courseName != null) {
+          _courseRef = FirebaseDatabase.instance.reference().child('courses').child(_courseName);
+          _courseSubscription = _courseRef.onValue.listen((Event event) {
+            print('course changed? to ${event.snapshot.value}');
+            if (event.snapshot.value == null) {
+              _courseRef.set({
+                'currentDate': _currentDate,
+                'students': _students,
+                'sections': _sections,
+                'teams': _teams,
+                'days': _days,
+              });
+            } else {
+              setState(() {
+                _currentDate = event.snapshot.value['currentDate'] ?? -1;
+                _students = (event.snapshot.value['students'] ?? []).toList(growable: true);
+                _sections = (event.snapshot.value['sections'] ?? []).toList(growable: true);
+                _teams = (event.snapshot.value['teams'] ?? []).toList(growable: true);
+                _days = (event.snapshot.value['days'] ?? []).toList(growable: true);
+              });
+            }
+          });
+          _courseRef.keepSynced(true);
+        }
       });
     });
     return _user;
@@ -113,65 +140,21 @@ class _MyHomePageState extends State<MyHomePage> {
     FirebaseDatabase.instance.setPersistenceEnabled(true);
     FirebaseDatabase.instance.setPersistenceCacheSizeBytes(1000000);
     _signInWithGoogle();
-    _readState().then((Map state) {
-      setState(() {
-        _students = state['students'];
-        _sections = state['sections'];
-        _days = state['days'];
-        if (state.containsKey('teams')) {
-          _teams = state['teams'];
-        }
-        if (state.containsKey('currentDate')) {
-          _currentDate = state['currentDate'];
-        }
-      });
-    });
   }
 
-  Future<File> _getLocalFile() async {
-    // get the path to the document directory.
-    String dir = (await getApplicationDocumentsDirectory()).path;
-    return new File('$dir/student-pairs.json');
-  }
-
-  Future<Map> _readState() async {
-    try {
-      File file = await _getLocalFile();
-      // read the variable as a string from the file.
-      String contents = await file.readAsString();
-      print('reading $file contents are $contents');
-      return JSON.decode(contents);
-    } on FileSystemException {
-      return {
-      'currentDate': -1,
-          'students': [],
-          'sections': [],
-          'days': []};
-    }
-  }
-  String _jsonState() {
-    _students.sort();
-    return JSON.encode({
-      'currentDate': _currentDate,
-      'students': _students,
-      'sections': _sections,
-      'teams': _teams,
-      'days': _days,
-    });
-  }
   Future<Null> _writeState(void setit()) async {
     setState(setit);
     // write the variable as a string to the file
     _students.sort();
-    await (await _getLocalFile()).writeAsString(JSON.encode({
-      'currentDate': _currentDate,
-      'students': _students,
-      'sections': _sections,
-      'teams': _teams,
-      'days': _days,
-    }));
-    Map test = await _readState();
-    debugPrint('my file is $test');
+    if (_courseRef != null && _students.length > 0) {
+      _courseRef.set({
+        'currentDate': _currentDate,
+        'students': _students,
+        'sections': _sections,
+        'teams': _teams,
+        'days': _days,
+      });
+    }
   }
 
   _currentDateSetter(int value) {
@@ -201,8 +184,8 @@ class _MyHomePageState extends State<MyHomePage> {
         return;
       }
       await _writeState(() {
-          _sections.add(x);
-        });
+        _sections.add(x);
+      });
       break;
     case _View.teams:
       var x = await textInputDialog(context, 'Add team');
@@ -468,11 +451,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_courseName == null && _coursenameRef != null) {
+    if (_courseName == null && _courseNameRef != null) {
       print('coursename is unknown?!');
       textInputDialog(context, 'What is the course name?').then((cn) {
             print('cn is now $cn');
-            _coursenameRef.set(cn);
+            _courseNameRef.set(cn);
           });
     }
     Widget body;
