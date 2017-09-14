@@ -66,14 +66,15 @@ int toint(_View v) {
   }
 }
 
-final Widget studentIcon = new Icon(Icons.people);
+final Widget studentIcon = new Icon(Icons.person);
 final Widget sectionIcon = new Icon(Icons.assignment);
-final Widget teamIcon = new Icon(Icons.restaurant);
+final Widget teamIcon = new Icon(Icons.people);
 final Widget dayIcon = new Icon(Icons.schedule);
 final Widget deleteIcon = new Icon(Icons.delete);
 
 class _MyHomePageState extends State<MyHomePage> {
   _View _view = _View.students;
+  List<String> _authorized_users = [];
   List<String> _students = [];
   List<String> _sections = [];
   List<String> _teams = [];
@@ -111,7 +112,7 @@ class _MyHomePageState extends State<MyHomePage> {
         if (_courseName != null) {
           _courseRef = FirebaseDatabase.instance.reference().child('courses').child(_courseName);
           _courseSubscription = _courseRef.onValue.listen((Event event) {
-            print('course changed? to ${event.snapshot.value}');
+            // print('course changed? to ${event.snapshot.value}');
             if (event.snapshot.value == null) {
               _courseRef.set({
                 'currentDate': _currentDate,
@@ -119,9 +120,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 'sections': _sections,
                 'teams': _teams,
                 'days': _days,
+                'authorized_users': _authorized_users,
               });
             } else {
               setState(() {
+                _authorized_users =
+                  (event.snapshot.value['authorized_users'] ?? []).toList(growable: true);
+                if (!_authorized_users.contains(_user.uid)) {
+                  _authorized_users.add(_user.uid);
+                }
                 _currentDate = event.snapshot.value['currentDate'] ?? -1;
                 _students = (event.snapshot.value['students'] ?? []).toList(growable: true);
                 _sections = (event.snapshot.value['sections'] ?? []).toList(growable: true);
@@ -156,6 +163,7 @@ class _MyHomePageState extends State<MyHomePage> {
         'sections': _sections,
         'teams': _teams,
         'days': _days,
+        'authorized_users': _authorized_users,
       });
     }
   }
@@ -607,7 +615,7 @@ class _MyHomePageState extends State<MyHomePage> {
               title: new Text("Sections"),
             ),
             new BottomNavigationBarItem(
-              icon: new Icon(Icons.restaurant),
+              icon: teamIcon,
               title: new Text("Teams"),
             ),
             new BottomNavigationBarItem(
