@@ -66,6 +66,9 @@ int toint(_View v) {
   }
 }
 
+final Widget authorizedUserIcon = new Icon(Icons.face);
+final Widget courseIcon = new Icon(Icons.local_florist);
+final Widget scrambleIcon = new Icon(Icons.shuffle);
 final Widget studentIcon = new Icon(Icons.person);
 final Widget sectionIcon = new Icon(Icons.assignment);
 final Widget teamIcon = new Icon(Icons.people);
@@ -592,57 +595,59 @@ class _MyHomePageState extends State<MyHomePage> {
       title = _days[_currentDate]['date'];
     }
     List<String> day_options = new List.from(_days.map((d) => d['date']))..insert(0, 'manage lists');
-    return new Scaffold(appBar: new AppBar(title: alternativesMenu(day_options, title,
-                                                                   (String s) async {
-                                                                     await _writeState(() { _currentDate = day_options.indexOf(s) - 1; });
-                                                                   }),
-                         // title: new Text(title),
-                         actions: [
-                                   new Center(child: new FlatButton(
-                                           child: new Icon(Icons.share),
-                                           onPressed: () { share(_jsonState()); }))
-                                   ],
-                         ),
-      body: body,
-      bottomNavigationBar: new BottomNavigationBar(
-      items: [
-            new BottomNavigationBarItem(
-              icon: studentIcon,
-              title: new Text("Students"),
-            ),
-            new BottomNavigationBarItem(
-              icon: sectionIcon,
-              title: new Text("Sections"),
-            ),
-            new BottomNavigationBarItem(
-              icon: teamIcon,
-              title: new Text("Teams"),
-            ),
-            new BottomNavigationBarItem(
-              icon: dayIcon,
-              title: new Text("Days"),
-            ),
-        ],
-      currentIndex: toint(_view),
-      onTap: (int index) {
-        setState(() {
-            switch (index) {
-              case 0:
-                _view = _View.students;
-                break;
-              case 1:
-                _view = _View.sections;
-                break;
-              case 2:
-                _view = _View.teams;
-                break;
-              case 3:
-                _view = _View.days;
-                break;
+    return new Scaffold(
+        appBar: new AppBar(
+            title: alternativesMenu(day_options, title,
+                (String s) async {
+                  await _writeState(() { _currentDate = day_options.indexOf(s) - 1; });
+                }),
+            // title: new Text(title),
+            actions: [
+              // new Center(child: alternativesMenu(['hello','world'], 'hello',
+              //         (String s) async {
+              //           print('string is $s');
+              //         })),
+              // new FlatButton(
+              //     child: courseIcon,
+              //     onPressed: () { share(_jsonState()); }),
+              new FlatButton(
+                  child: new Icon(Icons.share),
+                  onPressed: () { share(_jsonState()); }),
+            ],),
+        body: body,
+        bottomNavigationBar: new BottomNavigationBar(
+            items: [
+              new BottomNavigationBarItem(
+                  icon: studentIcon,
+                  title: new Text("Students"),),
+              new BottomNavigationBarItem(
+                  icon: sectionIcon,
+                  title: new Text("Sections")),
+              new BottomNavigationBarItem(
+                  icon: teamIcon,
+                  title: new Text("Teams"),),
+              new BottomNavigationBarItem(
+                  icon: dayIcon,
+                  title: new Text("Days"),),
+            ],
+            currentIndex: toint(_view),
+            onTap: (int index) { setState(() {
+              switch (index) {
+                case 0:
+                  _view = _View.students;
+                  break;
+                case 1:
+                  _view = _View.sections;
+                  break;
+                case 2:
+                  _view = _View.teams;
+                  break;
+                case 3:
+                  _view = _View.days;
+                  break;
               }
-          });
-      },
-      ),
+            });
+        },),
       floatingActionButton: new FloatingActionButton(
         onPressed: add,
         tooltip: 'Increment',
