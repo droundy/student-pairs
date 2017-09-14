@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 
@@ -13,6 +14,7 @@ import 'package:share/share.dart';
 
 final GoogleSignIn _googleSignIn = new GoogleSignIn();
 final FirebaseAuth _auth = FirebaseAuth.instance;
+final _random = new Random(); // generates a new Random object
 
 void main() {
   // the following logs us in.
@@ -183,7 +185,17 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<Null> scramble() async {
     String answer = await optionsDialog(context,
         'Scramble which students?', ['ALL', 'UNASSIGNED']);
-    print('I should be scrambling now! $answer');
+    if (answer == null) {
+      return;
+    }
+    await _writeState(() {
+      if (answer == 'ALL') {
+        _students.forEach((s) { _todayStudent(s).remove('team'); });
+      }
+      _sections.forEach((section) {
+            _fixUpSection(section);
+          });
+    });
   }
 
   Future<Null> add() async {
@@ -308,6 +320,16 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  List<String> _teamsAvailable() {
+    List<String> teams = [];
+    _teams.forEach((t) { teams.add(t); });
+    for (int i=0; i<_students.length; i++) {
+      String s = _students[i];
+      String t = _todayStudentTeam(s);
+      teams.remove(t);
+    }
+    return teams;
+  }
   Map _teamsForSection(String section) {
     Map teams = {};
     for (int i=0; i<_students.length; i++) {
@@ -348,7 +370,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _fixUpSection(String section) {
     Map teams = _teamsForSection(section);
-    List<String> students = new List.from(_students.where((s) => _todayStudentSection(s) == _sections[i]));
+    List<String> students = new List.from(_students.where((s) => _todayStudentSection(s) == section));
     List<String> students_handled = new List.from([]);
     List<String> students_remaining = new List.from(students);
     teams.forEach((t,stu) {
@@ -357,6 +379,33 @@ class _MyHomePageState extends State<MyHomePage> {
           students_remaining.remove(s);
         }
       });
+    teams.forEach((t,stu) {
+      if (stu.length == 1) {
+        List<String> parts = _possiblePartnersForStudent(stu[0]);
+        if (parts.length > 0) {
+          String p = part[_random.nextInt(part.length)];
+          _todayStudent(p)['team'] = t;
+          students_remaining.remove(p);
+          students_handled.add(p);
+        }
+      }
+    });
+    List<String> teams_available = _teamsAvailable();
+    teams_available.forEach((t) {
+          if (students_remaining.length > 0) {
+            String s = students_remaining[_random.nextInt(students_remaining.length)];
+            _todayStudent(s)['team'] = t;
+            students_handled.add(s);
+            students_remaining.remove(s);
+            List<String> parts = _possiblePartnersForStudent(s);
+            if (parts.length > 0) {
+              String p = parts[_random.nextInt(parts.length)];
+              _todayStudent(p)['team'] = t;
+              students_remaining.remove(p);
+              students_handled.add(p);
+            }
+          }
+        });
   }
 
   void _fixUpSectionErrors(String section) {
