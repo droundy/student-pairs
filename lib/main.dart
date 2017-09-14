@@ -13,25 +13,9 @@ import 'package:share/share.dart';
 
 final GoogleSignIn _googleSignIn = new GoogleSignIn();
 final FirebaseAuth _auth = FirebaseAuth.instance;
-FirebaseUser _user = null;
-
-Future<FirebaseUser> _signInWithGoogle() async {
-  final GoogleSignInAccount googleUser = await _googleSignIn.signIn();
-  final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-  final FirebaseUser user = await _auth.signInWithGoogle(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken);
-  assert(user.email != null);
-  assert(user.displayName != null);
-  assert(!user.isAnonymous);
-  assert(await user.getToken() != null);
-  return user;
-}
 
 void main() {
   // the following logs us in.
-  _signInWithGoogle().then((user) { _user = user; print('user is $_user'); } );
-  print('user is $_user');
   runApp(new MyApp());
 }
 
@@ -95,10 +79,40 @@ class _MyHomePageState extends State<MyHomePage> {
   List<String> _teams = [];
   List<Map> _days = [];
   int _currentDate = 0;
+  FirebaseUser _user = null;
+  DatabaseReference _coursenameRef = null;
+  StreamSubscription<Event> _coursenameSubscription;
+  String _courseName;
+
+  Future<FirebaseUser> _signInWithGoogle() async {
+    final GoogleSignInAccount googleUser = await _googleSignIn.signIn();
+    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+    _user = await _auth.signInWithGoogle(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken);
+    assert(_user.email != null);
+    assert(_user.displayName != null);
+    assert(_user.uid != null);
+    assert(!_user.isAnonymous);
+    assert(await _user.getToken() != null);
+    print('userid for ${_user.displayName} is ${_user.uid}');
+    _coursenameRef = FirebaseDatabase.instance.reference().child('users').child(_user.uid).child('coursename');
+    _coursenameRef.keepSynced(true);
+    _coursenameSubscription = _coursenameRef.onValue.listen((Event event) {
+      setState(() {
+        _courseName = event.snapshot.value;
+        print('coursename is now $_courseName');
+      });
+    });
+    return _user;
+  }
 
   @override
   void initState() {
     super.initState();
+    FirebaseDatabase.instance.setPersistenceEnabled(true);
+    FirebaseDatabase.instance.setPersistenceCacheSizeBytes(1000000);
+    _signInWithGoogle();
     _readState().then((Map state) {
       setState(() {
         _students = state['students'];
@@ -454,6 +468,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_courseName == null && _coursenameRef != null) {
+      print('coursename is unknown?!');
+      textInputDialog(context, 'What is the course name?').then((cn) {
+            print('cn is now $cn');
+            _coursenameRef.set(cn);
+          });
+    }
     Widget body;
     if (_amViewingDate()) {
       for (String section in _sections) {
