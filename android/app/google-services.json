@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "588850859761",
+    "firebase_url": "https://student-pairs.firebaseio.com",
+    "project_id": "student-pairs",
+    "storage_bucket": "student-pairs.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:588850859761:android:5549b752e8e567fb",
+        "android_client_info": {
+          "package_name": "edu.oregonstate.physics.studentpairs"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "588850859761-oirniivph78dv2vdlk3hanci8j33hhhp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "edu.oregonstate.physics.studentpairs",
+            "certificate_hash": "ae6eb7541f42fe1adf0b3058a420ec690239fe60"
+          }
+        },
+        {
+          "client_id": "588850859761-jgoomlt6ldnpurbo9h2d8v8i5tbu2569.apps.googleusercontent.com",
+          "client_type": 3
+        },
+        {
+          "client_id": "588850859761-ljjd30e1n05ol653htu6iq7bfudp4dsr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2A5WwvvKsCMgobsb0_0H2k0KYj7i0cco"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

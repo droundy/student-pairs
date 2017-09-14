@@ -4,10 +4,34 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
+
 import 'package:path_provider/path_provider.dart';
 import 'package:share/share.dart';
 
+final GoogleSignIn _googleSignIn = new GoogleSignIn();
+final FirebaseAuth _auth = FirebaseAuth.instance;
+FirebaseUser _user = null;
+
+Future<FirebaseUser> _signInWithGoogle() async {
+  final GoogleSignInAccount googleUser = await _googleSignIn.signIn();
+  final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+  final FirebaseUser user = await _auth.signInWithGoogle(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken);
+  assert(user.email != null);
+  assert(user.displayName != null);
+  assert(!user.isAnonymous);
+  assert(await user.getToken() != null);
+  return user;
+}
+
 void main() {
+  // the following logs us in.
+  _signInWithGoogle().then((user) { _user = user; print('user is $_user'); } );
+  print('user is $_user');
   runApp(new MyApp());
 }
 
