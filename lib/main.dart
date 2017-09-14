@@ -180,6 +180,10 @@ class _MyHomePageState extends State<MyHomePage> {
     return setter;
   }
 
+  Future<Null> scramble() async {
+    print('I should be scrambling now!');
+  }
+
   Future<Null> add() async {
     switch (_view) {
     case _View.students:
@@ -594,6 +598,12 @@ class _MyHomePageState extends State<MyHomePage> {
     if (_amViewingDate()) {
       title = _days[_currentDate]['date'];
     }
+    Icon floatingActionIcon = new Icon(Icons.add);
+    var floatingActionOnPressed = add;
+    if (title != 'manage lists' && _view != _View.days) {
+      floatingActionIcon = scrambleIcon;
+      floatingActionOnPressed = scramble;
+    }
     List<String> day_options = new List.from(_days.map((d) => d['date']))..insert(0, 'manage lists');
     return new Scaffold(
         appBar: new AppBar(
@@ -649,9 +659,9 @@ class _MyHomePageState extends State<MyHomePage> {
             });
         },),
       floatingActionButton: new FloatingActionButton(
-        onPressed: add,
+        onPressed: floatingActionOnPressed,
         tooltip: 'Increment',
-        child: new Icon(Icons.add),
+        child: floatingActionIcon,
       ), // This trailing comma tells the Dart formatter to use
       // a style that looks nicer for build methods.
     );
