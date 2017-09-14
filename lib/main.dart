@@ -491,10 +491,19 @@ class _MyHomePageState extends State<MyHomePage> {
       case _View.sections:
         List<Widget> tables = [];
         for (int i=0;i<_sections.length;i++) {
-          tables.add(_studentTable(new List.from(_students.where((s) => _todayStudentSection(s) == _sections[i]))));
+          List students_section = new List.from(_students.where((s) => _todayStudentSection(s) == _sections[i]));
+          if (students_section.length > 0) {
+            tables.add(_studentTable(students_section));
+          }
         }
-        tables.add(_studentTable(new List.from(_students.where((s) => _todayStudentSection(s) == 'absent'))));
-        tables.add(_studentTable(new List.from(_students.where((s) => _todayStudentSection(s) == '-'))));
+        List students_absent = new List.from(_students.where((s) => _todayStudentSection(s) == 'absent'));
+        if (students_absent.length > 0) {
+          tables.add(_studentTable(students_absent));
+        }
+        List students_unassigned = new List.from(_students.where((s) => _todayStudentSection(s) == '-'));
+        if (students_unassigned.length > 0) {
+          tables.add(_studentTable(students_unassigned));
+        }
         body = new ListView(children: tables);
         break;
       case _View.teams:
