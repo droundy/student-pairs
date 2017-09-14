@@ -181,7 +181,9 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<Null> scramble() async {
-    print('I should be scrambling now!');
+    String answer = await optionsDialog(context,
+        'Scramble which students?', ['ALL', 'UNASSIGNED']);
+    print('I should be scrambling now! $answer');
   }
 
   Future<Null> add() async {
@@ -727,6 +729,23 @@ Future<bool> confirmDialog(BuildContext context, String title, String action) as
                                                                        ),
                                                         ]),
                     );
+}
+
+
+Future<String> optionsDialog(BuildContext context,String title,List<String> actions) async {
+  var buttons = <Widget>[
+            new FlatButton(
+                child: new Text('CANCEL'),
+                onPressed: () { Navigator.pop(context, null); })];
+  for (int i=0;i<actions.length;i++) {
+    buttons.add(
+        new FlatButton(
+            child: new Text(actions[i]),
+            onPressed: () { Navigator.pop(context, actions[i]); }));
+  }
+  return showDialog(
+      context: context,
+      child: new AlertDialog(title: new Text(title), actions: buttons));
 }
 
 final menuIcon = new Icon(Icons.more_vert);
