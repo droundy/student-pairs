@@ -127,18 +127,24 @@ class _MyHomePageState extends State<MyHomePage> {
           _courseSubscription = _courseRef.onValue.listen((Event event) {
             // print('course changed? to ${event.snapshot.value}');
             if (event.snapshot.value == null) {
+              Map authmap = {};
+              _authorized_users.forEach((u) {
+                    authmap[u] = true;
+                  });
               _courseRef.set({
                 'currentDate': _currentDate,
                 'students': _students,
                 'sections': _sections,
                 'teams': _teams,
                 'days': _days,
-                'authorized_users': _authorized_users,
+                'authorized_users': authmap,
               });
             } else {
               setState(() {
-                _authorized_users =
-                  (event.snapshot.value['authorized_users'] ?? []).toList(growable: true);
+                _authorized_users = [];
+                (event.snapshot.value['authorized_users'] ?? {}).forEach((u,x) {
+                  _authorized_users.add(u);
+                });
                 if (!_authorized_users.contains(_user.uid)) {
                   _authorized_users.add(_user.uid);
                 }
@@ -170,13 +176,17 @@ class _MyHomePageState extends State<MyHomePage> {
     // write the variable as a string to the file
     _students.sort();
     if (_courseRef != null && _students.length > 0) {
+      Map authmap = {};
+      _authorized_users.forEach((u) {
+            authmap[u] = true;
+          });
       _courseRef.set({
         'currentDate': _currentDate,
         'students': _students,
         'sections': _sections,
         'teams': _teams,
         'days': _days,
-        'authorized_users': _authorized_users,
+        'authorized_users': authmap,
       });
     }
   }
