@@ -105,16 +105,24 @@ class _MyHomePageState extends State<MyHomePage> {
     assert(!_user.isAnonymous);
     assert(await _user.getToken() != null);
     final user_ref = FirebaseDatabase.instance.reference().child('users').child(_user.uid);
-    user_ref.child('displayName').set(_user.displayName);
+    user_ref.child('displayname').set(_user.displayName);
     user_ref.child('email').set(_user.email);
     print('userid for ${_user.displayName} is ${_user.uid}');
-    _courseNameRef = FirebaseDatabase.instance.reference().child('users').child(_user.uid).child('coursename');
+    _courseNameRef = user_ref.child('coursename');
     _courseNameRef.keepSynced(true);
     _courseNameSubscription = _courseNameRef.onValue.listen((Event event) {
       setState(() {
         _courseName = event.snapshot.value;
-        print('courseName is now $_courseName');
-        if (_courseName != null) {
+        print('coursename is now $_courseName');
+        if (_courseName == null) {
+          _courseRef = null;
+          _courseSubscription = null;
+          _authorized_users = [];
+          _students = [];
+          _sections = [];
+          _teams = [];
+          _days = [];
+        } else {
           _courseRef = FirebaseDatabase.instance.reference().child('courses').child(_courseName);
           _courseSubscription = _courseRef.onValue.listen((Event event) {
             // print('course changed? to ${event.snapshot.value}');
@@ -171,6 +179,16 @@ class _MyHomePageState extends State<MyHomePage> {
         'authorized_users': _authorized_users,
       });
     }
+  }
+  String _jsonState() {
+    _students.sort();
+    return JSON.encode({
+      'currentDate': _currentDate,
+      'students': _students,
+      'sections': _sections,
+      'teams': _teams,
+      'days': _days,
+    });
   }
 
   _currentDateSetter(int value) {
@@ -654,32 +672,74 @@ class _MyHomePageState extends State<MyHomePage> {
         break;
       }
     }
-    String title = 'manage lists';
+
+    String courseNameButton = 'Select course';
+    if (_courseName != null) {
+      courseNameButton = _courseName;
+    }
+
+    String current_day_text = 'manage';
     if (_amViewingDate()) {
-      title = _days[_currentDate]['date'];
+      current_day_text = _days[_currentDate]['date'];
     }
     Icon floatingActionIcon = new Icon(Icons.add);
     var floatingActionOnPressed = add;
-    if (title != 'manage lists' && _view != _View.days) {
+    if (current_day_text != 'manage' && _view != _View.days) {
       floatingActionIcon = scrambleIcon;
       floatingActionOnPressed = scramble;
     }
-    List<String> day_options = new List.from(_days.map((d) => d['date']))..insert(0, 'manage lists');
+    List<String> day_options = new List.from(_days.map((d) => d['date']))..insert(0, 'manage');
     return new Scaffold(
         appBar: new AppBar(
-            title: alternativesMenu(day_options, title,
-                (String s) async {
-                  await _writeState(() { _currentDate = day_options.indexOf(s) - 1; });
-                }),
+            title: new FlatButton(
+                child: new Text(courseNameButton),
+                onPressed: () {
+              textInputDialog(context, 'What is the course name?').then((cn) {
+                    if (cn != null) {
+                      _courseNameRef.set(cn);
+                    }
+                  });
+            }),
+            // title: alternativesMenu(day_options, current_day_text,
+            //     (String s) async {
+            //       await _writeState(() { _currentDate = day_options.indexOf(s) - 1; });
+            //     }),
             // title: new Text(title),
             actions: [
-              // new Center(child: alternativesMenu(['hello','world'], 'hello',
-              //         (String s) async {
-              //           print('string is $s');
-              //         })),
-              // new FlatButton(
-              //     child: courseIcon,
-              //     onPressed: () { share(_jsonState()); }),
+              new FlatButton(
+                  child: authorizedUserIcon,
+                  onPressed: () async {
+                    DataSnapshot users = await FirebaseDatabase.instance.reference().child('users').once();
+                    List<Map> all_users = [];
+                    List<Map> auth_users = [];
+                    users.value.forEach((u,data) {
+                      if (_authorized_users.contains(u)) {
+                        auth_users.add({
+                          'uid': u,
+                          'name': data['displayname'],
+                          'email': data['email']});
+                      } else {
+                        all_users.add({
+                          'uid': u,
+                          'name': data['displayname'],
+                          'email': data['email']});
+                      }
+                    });
+                    String uid = await promptUserDialog(context,
+                        '$_courseName users',
+                        auth_users, all_users);
+                    if (uid != null) {
+                      setState(() {
+                        _authorized_users.add(uid);
+                      });
+                    }
+                  }),
+              new Center(
+                  // widthFactor: 1.2,
+                  child: alternativesMenu(day_options, current_day_text,
+                      (String s) async {
+                        await _writeState(() { _currentDate = day_options.indexOf(s) - 1; });
+                      })),
               new FlatButton(
                   child: new Icon(Icons.share),
                   onPressed: () { share(_jsonState()); }),
@@ -804,6 +864,31 @@ Future<String> optionsDialog(BuildContext context,String title,List<String> acti
   return showDialog(
       context: context,
       child: new AlertDialog(title: new Text(title), actions: buttons));
+}
+
+Future<String> promptUserDialog(BuildContext context,String title,
+    List<Map> auth,List<Map> users) async {
+  var buttons = <Widget>[new Text('Currently authorized users',
+        textAlign: TextAlign.center,
+        style: new TextStyle(fontWeight: FontWeight.bold),)
+  ];
+  auth.forEach((u) {
+        buttons.add(new Text("${u['name']} <${u['email']}>"));
+      });
+  if (users.length > 0) {
+    buttons.add(new Text('Authorize new user',
+            textAlign: TextAlign.center,
+            style: new TextStyle(fontWeight: FontWeight.bold),));
+  }
+  users.forEach((u) {
+        buttons.add(
+            new SimpleDialogOption(
+                child: new Text("${u['name']} <${u['email']}>"),
+                onPressed: () { Navigator.pop(context, u['uid']); }));
+      });
+  return showDialog(
+      context: context,
+      child: new SimpleDialog(title: new Text(title), children: buttons));
 }
 
 final menuIcon = new Icon(Icons.more_vert);
