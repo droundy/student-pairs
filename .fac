@@ -9,3 +9,6 @@
 | inkscape -d 23.5 -e android/app/src/main/res/mipmap-mdpi/ic_launcher.png icon.svg
 
 | inkscape -d 72 -e feature_graphic.png feature_graphic.svg
+
+| inkscape -d 251 -e hires_icon.png icon.svg
+
