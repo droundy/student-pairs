@@ -411,7 +411,7 @@ class _MyHomePageState extends State<MyHomePage> {
       if (stu.length == 1) {
         List<String> parts = _possiblePartnersForStudent(stu[0]);
         if (parts.length > 0) {
-          String p = part[_random.nextInt(part.length)];
+          String p = parts[_random.nextInt(parts.length)];
           _todayStudent(p)['team'] = t;
           students_remaining.remove(p);
           students_handled.add(p);
