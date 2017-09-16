@@ -10,3 +10,4 @@ pubspec.lock
 .flutter-plugins
 *~
 key.properties
+*.tum
