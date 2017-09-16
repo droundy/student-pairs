@@ -493,13 +493,31 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _teamMenuForStudent(String s) {
-    List<String> team_options = new List.from(_teams)..add('-');
-    return alternativesMenu(team_options, _todayStudentTeam(s),
-                            (n) {
-                              _writeState (() {
-                                  _todayStudent(s)['team'] = n;
-                                });
-                            });
+    List<String> team_options = new List.from(_teamsAvailable())..add('-');
+    String section = _todayStudentSection(s);
+    _teamsForSection(section).forEach((t,stu) {
+      if (stu.length < 2 || stu.contains(s)) {
+        team_options.add(t);
+      }
+    });
+    team_options.sort();
+    String current = _todayStudentTeam(s);
+    if (team_options.length == 0) return new Text('');
+    List<PopupMenuItem> pmis = [];
+    team_options.forEach((i) {
+          pmis.add(new PopupMenuItem<String>(value: i, child: _teamLabel(i, s)));
+        });
+    Widget cw = menuIcon;
+    if (current != '-' && current != null) {
+      cw = _teamLabel(current, s);
+    }
+    return new PopupMenuButton<String>(child: cw,
+        itemBuilder: (BuildContext context) => pmis,
+        onSelected: (n) {
+          _writeState (() {
+            _todayStudent(s)['team'] = n;
+          });
+        });
   }
 
   List<String> _lastWeekStudentInTeam(String team) {
@@ -518,8 +536,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   List<Widget> _studentMenusForTeam(String section, String team, List<String> currentStudents) {
-    List<String> lastWeekStudents = _lastWeekStudentInTeam(team);
-    List<String> previousWeekStudents = _previousWeekStudentInTeam(team);
     List<String> possibleStudents = new List.from(_students.where((s) =>
             _todayStudentSection(s) == section || section == null));
     for (String p in new List.from(possibleStudents)) {
@@ -547,24 +563,21 @@ class _MyHomePageState extends State<MyHomePage> {
 
     if (currentStudents.length == 0) {
       return [
-        boldedAlternativesMenu(possibleStudents, '-',
-            lastWeekStudents, previousWeekStudents, set_student()),
+        _studentsMenu(possibleStudents, '-', team, set_student()),
         new Text('')];
     }
     List<String> student_options = new List.from(_possiblePartnersForStudent(currentStudents[0]));
     if (currentStudents.length == 1) {
       String s = currentStudents[0];
       return [
-        boldedAlternativesMenu(allow_removal(possibleStudents), s,
-            lastWeekStudents, previousWeekStudents, set_student()),
-        boldedAlternativesMenu(student_options, null,
-            lastWeekStudents, previousWeekStudents, set_student(s)),];
+        _studentsMenu(allow_removal(possibleStudents), s, team, set_student()),
+        _studentsMenu(student_options, null, team, set_student(s)),];
     }
     return [
-      boldedAlternativesMenu(allow_removal(_possiblePartnersForStudent(currentStudents[1])),
-          currentStudents[0], lastWeekStudents, previousWeekStudents, set_student(currentStudents[1])),
-      boldedAlternativesMenu(allow_removal(_possiblePartnersForStudent(currentStudents[0])),
-          currentStudents[1], lastWeekStudents, previousWeekStudents, set_student(currentStudents[0])),
+      _studentsMenu(allow_removal(_possiblePartnersForStudent(currentStudents[1])),
+          currentStudents[0], team, set_student(currentStudents[1])),
+      _studentsMenu(allow_removal(_possiblePartnersForStudent(currentStudents[0])),
+          currentStudents[1], team, set_student(currentStudents[0])),
     ];
   }
 
@@ -578,7 +591,7 @@ class _MyHomePageState extends State<MyHomePage> {
           String s = students_to_list[i];
           String s_section = _todayStudentSection(s);
           String s_team = _todayStudentTeam(s);
-          rows.add(new DataRow(cells: <DataCell>[new DataCell(new Text(s)),
+          rows.add(new DataRow(cells: <DataCell>[new DataCell(_studentLabel(s)),
                                                  new DataCell(_sectionMenuForStudent(s)),
                                                  new DataCell(_teamMenuForStudent(s)),
                                                  ]));
@@ -593,15 +606,90 @@ class _MyHomePageState extends State<MyHomePage> {
                                             new DataColumn(label: new Icon(Icons.person)),
                                             ];
     List<DataRow> rows = [];
-    _teamsForSection(section).forEach((team,students) {
-        List<Widget> student_menus = _studentMenusForTeam(section, team, students);
-        rows.add(new DataRow(cells: <DataCell>[new DataCell(new Text(team)),
-                                               new DataCell(student_menus[0]),
-                                               new DataCell(student_menus[1]),
-                                               ]));
-      });
+    Map teams_map =  _teamsForSection(section);
+    List<String> teams = new List.from(teams_map.keys);
+    teams.sort();
+    teams.forEach((team) {
+          List<String> students = teams_map[team];
+          List<Widget> student_menus = _studentMenusForTeam(section, team, students);
+          rows.add(new DataRow(cells: <DataCell>[
+            new DataCell(new Text(team)),
+            new DataCell(student_menus[0]),
+            new DataCell(student_menus[1]),
+          ]));
+        });
     return new DataTable(columns: columns,
                          rows: rows);
+  }
+
+  Widget _studentLabel(String student, [String team]) {
+    if (team == null) {
+      team = _todayStudentTeam(student);
+    }
+    if (team == '-') {
+      return new Text(student);
+    }
+    String yesterday_team = null;
+    String previous_team = null;
+    if (_currentDate - 1 >= 0) {
+      yesterday_team = _todayStudentTeam(student, _days[_currentDate-1]);
+      if (_currentDate - 2 >= 0) {
+        previous_team = _todayStudentTeam(student, _days[_currentDate-2]);
+      }
+    }
+    if (team == yesterday_team) {
+      if (team == previous_team) {
+        return new Text(student,
+            style: new TextStyle(fontWeight: FontWeight.bold,
+                fontStyle: FontStyle.italic));
+      }
+      return new Text(student, style: new TextStyle(fontWeight: FontWeight.bold));
+    }
+    if (team == previous_team) {
+      return new Text(student, style: new TextStyle(fontStyle: FontStyle.italic));
+    }
+    return new Text(student);
+  }
+
+  Widget _teamLabel(String team, [String student]) {
+    if (student == null) {
+      return new Text(team);
+    }
+    String yesterday_team = null;
+    String previous_team = null;
+    if (_currentDate - 1 >= 0) {
+      yesterday_team = _todayStudentTeam(student, _days[_currentDate-1]);
+      if (_currentDate - 2 >= 0) {
+        previous_team = _todayStudentTeam(student, _days[_currentDate-2]);
+      }
+    }
+    if (team == yesterday_team) {
+      if (team == previous_team) {
+        return new Text(team,
+            style: new TextStyle(fontWeight: FontWeight.bold,
+                fontStyle: FontStyle.italic));
+      }
+      return new Text(team, style: new TextStyle(fontWeight: FontWeight.bold));
+    }
+    if (team == previous_team) {
+      return new Text(team, style: new TextStyle(fontStyle: FontStyle.italic));
+    }
+    return new Text(team);
+  }
+
+  Widget _studentsMenu(List<String> items, String current, String team, void onchange(String newval)) {
+    if (items.length == 0) return new Text('');
+    List<PopupMenuItem> pmis = [];
+    items.forEach((i) {
+          pmis.add(new PopupMenuItem<String>(value: i, child: _studentLabel(i, team)));
+        });
+    Widget cw = menuIcon;
+    if (current != '-' && current != null) {
+      cw = _studentLabel(current, team);
+    }
+    return new PopupMenuButton<String>(child: cw,
+        itemBuilder: (BuildContext context) => pmis,
+        onSelected: onchange);
   }
 
   @override
@@ -669,21 +757,21 @@ class _MyHomePageState extends State<MyHomePage> {
       switch (_view) {
       case _View.students:
         List<Widget> ch = _students.map((s) =>
-                                        new Padding(child: new Row(children: <Widget>[new Text(s),
-                                                                                      deleteButton('student $s', () {
-                                                                                          _students.remove(s);
-                                                                                        }),
-                                                                                      ],
-                                                                   mainAxisSize: MainAxisSize.max,
-                                                                   mainAxisAlignment: MainAxisAlignment.spaceBetween),
-                                                    padding: const EdgeInsets.all(12.0),)
+            new Padding(child: new Row(children: <Widget>[_studentLabel(s),
+              deleteButton('student $s', () {
+                _students.remove(s);
+              }),
+            ],
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween),
+                padding: const EdgeInsets.all(12.0),)
                                         ).toList();
         body = new ListView(children: ch);
         break;
       case _View.sections:
         List<Widget> ch = _sections.map((s) =>
-                                        new Padding(child: new Row(children: <Widget>[new Text(s),
-                                                                                      new FlatButton(child: deleteIcon,
+            new Padding(child: new Row(children: <Widget>[new Text(s),
+              new FlatButton(child: deleteIcon,
                                                                                                      onPressed: () async {
                                                                                                        var ok = await confirmDialog(context, 'Really delete section $s?', 'DELETE');
                                                                                                        if (ok != null && ok) {
@@ -996,21 +1084,4 @@ Widget boldedItalicText(String text, List<String> bolded, List<String> italic) {
   } else {
     return new Text(text);
   }
-}
-
-Widget boldedAlternativesMenu(List<String> items, String current, List<String> bolded, List<String> italic, void onchange(String newval)) {
-  if (items.length == 0) return new Text('');
-  List<PopupMenuItem> pmis = [];
-  items.forEach((i) {
-        pmis.add(new PopupMenuItem<String>(value: i,
-                child: boldedItalicText(i, bolded, italic)));
-      });
-  Widget cw = menuIcon;
-  if (current != '-' && current != null) {
-    cw = boldedItalicText(current, bolded, italic);
-  }
-  return new PopupMenuButton<String>(child: cw,
-                                     itemBuilder: (BuildContext context) => pmis,
-                                     onSelected: onchange,
-                                     );
 }
