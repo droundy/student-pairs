@@ -417,9 +417,30 @@ class _MyHomePageState extends State<MyHomePage> {
           students_remaining.remove(s);
         }
       });
+    List<String> teamsavailable = _teamsAvailable();
+    teamsavailable.forEach((t) {
+          if (students_remaining.length > 0) {
+            List<String> ss = new List.from(_lastWeekStudentInTeam(t).where((s) =>
+                    students_remaining.contains(s)));
+            List<String> sss = new List.from(ss.where((s) =>
+                    !_previousWeekStudentInTeam(t).contains(s)));
+            if (sss.length > 0) {
+              ss = sss;
+            }
+            if (ss.length > 0) {
+              String s = ss[_random.nextInt(ss.length)];
+              _todayStudent(s)['team'] = t;
+              students_handled.add(s);
+              students_remaining.remove(s);
+            }
+          }
+        });
+    teams = _teamsForSection(section);
     teams.forEach((t,stu) {
       if (stu.length == 1) {
-        List<String> parts = _possiblePartnersForStudent(stu[0]);
+        List<String> parts = new List.from(_possiblePartnersForStudent(stu[0]).where((s) =>
+                students_remaining.contains(s)));
+        print('possible partners for ${stu[0]}: $parts');
         if (parts.length > 0) {
           String p = parts[_random.nextInt(parts.length)];
           _todayStudent(p)['team'] = t;
@@ -428,8 +449,8 @@ class _MyHomePageState extends State<MyHomePage> {
         }
       }
     });
-    List<String> teams_available = _teamsAvailable();
-    teams_available.forEach((t) {
+    teamsavailable = _teamsAvailable();
+    teamsavailable.forEach((t) {
           if (students_remaining.length > 0) {
             String s = students_remaining[_random.nextInt(students_remaining.length)];
             _todayStudent(s)['team'] = t;
