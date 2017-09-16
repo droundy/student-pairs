@@ -360,6 +360,16 @@ class _MyHomePageState extends State<MyHomePage> {
   }
   Map _teamsForSection(String section) {
     Map teams = {};
+    if (section == null) {
+      _teams.forEach((t) {
+            teams[t] = [];
+          });
+      _students.forEach((s) {
+            String t = _todayStudentTeam(s);
+            teams.remove(t);
+          });
+      return teams;
+    }
     for (int i=0; i<_students.length; i++) {
       String s = _students[i];
       if (_todayStudentSection(s) == section) {
@@ -471,8 +481,26 @@ class _MyHomePageState extends State<MyHomePage> {
                             });
   }
 
+  List<String> _lastWeekStudentInTeam(String team) {
+    int last_week = _currentDate - 1;
+    if (last_week >= 0) {
+      return new List.from(_students.where((s) =>_todayStudentTeam(s, _days[last_week]) == team));
+    }
+    return [];
+  }
+  List<String> _previousWeekStudentInTeam(String team) {
+    int last_week = _currentDate - 2;
+    if (last_week >= 0) {
+      return new List.from(_students.where((s) =>_todayStudentTeam(s, _days[last_week]) == team));
+    }
+    return [];
+  }
+
   List<Widget> _studentMenusForTeam(String section, String team, List<String> currentStudents) {
-    List<String> possibleStudents = new List.from(_students.where((s) => _todayStudentSection(s) == section));
+    List<String> lastWeekStudents = _lastWeekStudentInTeam(team);
+    List<String> previousWeekStudents = _previousWeekStudentInTeam(team);
+    List<String> possibleStudents = new List.from(_students.where((s) =>
+            _todayStudentSection(s) == section || section == null));
     for (String p in new List.from(possibleStudents)) {
       String pteam = _todayStudentTeam(p);
       if (pteam != team && _teams.contains(pteam)) possibleStudents.remove(p);
@@ -497,17 +525,26 @@ class _MyHomePageState extends State<MyHomePage> {
     }
 
     if (currentStudents.length == 0) {
-      return [alternativesMenu(possibleStudents, '-', set_student()),
-              new Text('')];
+      return [
+        boldedAlternativesMenu(possibleStudents, '-',
+            lastWeekStudents, previousWeekStudents, set_student()),
+        new Text('')];
     }
     List<String> student_options = new List.from(_possiblePartnersForStudent(currentStudents[0]));
     if (currentStudents.length == 1) {
       String s = currentStudents[0];
-      return [alternativesMenu(allow_removal(possibleStudents), s, set_student()),
-              alternativesMenu(student_options, null, set_student(s)),];
+      return [
+        boldedAlternativesMenu(allow_removal(possibleStudents), s,
+            lastWeekStudents, previousWeekStudents, set_student()),
+        boldedAlternativesMenu(student_options, null,
+            lastWeekStudents, previousWeekStudents, set_student(s)),];
     }
-    return [alternativesMenu(allow_removal(_possiblePartnersForStudent(currentStudents[1])), currentStudents[0], set_student(currentStudents[1])),
-            alternativesMenu(allow_removal(_possiblePartnersForStudent(currentStudents[0])), currentStudents[1], set_student(currentStudents[0])),];
+    return [
+      boldedAlternativesMenu(allow_removal(_possiblePartnersForStudent(currentStudents[1])),
+          currentStudents[0], lastWeekStudents, previousWeekStudents, set_student(currentStudents[1])),
+      boldedAlternativesMenu(allow_removal(_possiblePartnersForStudent(currentStudents[0])),
+          currentStudents[1], lastWeekStudents, previousWeekStudents, set_student(currentStudents[0])),
+    ];
   }
 
   Widget _studentTable(List<String> students_to_list) {
@@ -589,6 +626,8 @@ class _MyHomePageState extends State<MyHomePage> {
           tables.add(new Center(child: new Text(_sections[i])));
           tables.add(_teamTable(_sections[i]));
         }
+        tables.add(new Center(child: new Text('unused')));
+        tables.add(_teamTable(null));
         body = new ListView(children: tables);
         break;
       case _View.days:
@@ -913,6 +952,41 @@ Widget alternativesMenu(List<String> items, String current, void onchange(String
   Widget cw = menuIcon;
   if (current != '-' && current != null) {
     cw = new Text(current);
+  }
+  return new PopupMenuButton<String>(child: cw,
+                                     itemBuilder: (BuildContext context) => pmis,
+                                     onSelected: onchange,
+                                     );
+}
+
+Widget boldedItalicText(String text, List<String> bolded, List<String> italic) {
+  bool isbold = bolded.contains(text);
+  bool isit = italic.contains(text);
+  if (isbold && isit) {
+    return new Text(text,
+        style: new TextStyle(fontWeight: FontWeight.bold,
+                             fontStyle: FontStyle.italic));
+  } else if (isbold) {
+    return new Text(text,
+        style: new TextStyle(fontWeight: FontWeight.bold));
+  } else if (isit) {
+    return new Text(text,
+        style: new TextStyle(fontStyle: FontStyle.italic));
+  } else {
+    return new Text(text);
+  }
+}
+
+Widget boldedAlternativesMenu(List<String> items, String current, List<String> bolded, List<String> italic, void onchange(String newval)) {
+  if (items.length == 0) return new Text('');
+  List<PopupMenuItem> pmis = [];
+  items.forEach((i) {
+        pmis.add(new PopupMenuItem<String>(value: i,
+                child: boldedItalicText(i, bolded, italic)));
+      });
+  Widget cw = menuIcon;
+  if (current != '-' && current != null) {
+    cw = boldedItalicText(current, bolded, italic);
   }
   return new PopupMenuButton<String>(child: cw,
                                      itemBuilder: (BuildContext context) => pmis,
