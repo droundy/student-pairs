@@ -306,7 +306,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Map _todayStudent(String student, [Map day]) {
     if (day == null) day = _today();
-    if (!day.containsKey('students')) {
+    if (day == null) return {};
+    if (day is! Map || !day.containsKey('students')) {
       day['students'] = {};
     }
     Map students = day['students'];
@@ -387,6 +388,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   List<String> _possiblePartnersForStudent(String student, [Map day]) {
     if (day == null) day = _today();
+    if (day == null) return [];
     String section = _todayStudentSection(student);
     if (!_sections.contains(section)) return Set();
     List<String> partners = new List.from(_students.where((s) => _todayStudentSection(s) == section));
