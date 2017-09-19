@@ -963,6 +963,7 @@ Future<String> textInputDialog(BuildContext context, String title) async {
   return showDialog(context: context,
                     child: new AlertDialog(title: new Text(title),
                                            content: new TextField(
+                                               autofocus: true,
                                                onChanged: (String newval) {
                                                  foo = newval;
                                                },
