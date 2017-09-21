@@ -93,16 +93,19 @@ class _MyHomePageState extends State<MyHomePage> {
   StreamSubscription<Event> _courseSubscription;
 
   Future<FirebaseUser> _signInWithGoogle() async {
-    final GoogleSignInAccount googleUser = await _googleSignIn.signIn();
-    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-    _user = await _auth.signInWithGoogle(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken);
-    assert(_user.email != null);
-    assert(_user.displayName != null);
-    assert(_user.uid != null);
-    assert(!_user.isAnonymous);
-    assert(await _user.getToken() != null);
+    _user = await _auth.currentUser();
+    if (_user == null) {
+      final GoogleSignInAccount googleUser = await _googleSignIn.signIn();
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      _user = await _auth.signInWithGoogle(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken);
+      assert(_user.email != null);
+      assert(_user.displayName != null);
+      assert(_user.uid != null);
+      assert(!_user.isAnonymous);
+      assert(await _user.getToken() != null);
+    }
     final user_ref = FirebaseDatabase.instance.reference().child('users').child(_user.uid);
     user_ref.child('displayname').set(_user.displayName);
     user_ref.child('email').set(_user.email);
@@ -166,7 +169,6 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     FirebaseDatabase.instance.setPersistenceEnabled(true);
-    FirebaseDatabase.instance.setPersistenceCacheSizeBytes(1000000);
     _signInWithGoogle();
   }
 
