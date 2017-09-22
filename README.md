@@ -4,6 +4,8 @@ An app for managing a pair-programming classroom.
 
 ## ChangeLog
 
+## 0.0.10
+
 ## 0.0.9
 
 - Nicer icon with bigger light bulb.
