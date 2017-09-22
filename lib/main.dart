@@ -909,7 +909,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         '$_courseName users',
                         auth_users, all_users);
                     if (uid != null) {
-                      setState(() {
+                      _writeState(() {
                         _authorized_users.add(uid);
                       });
                     }
