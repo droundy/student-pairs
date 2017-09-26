@@ -764,11 +764,13 @@ class _MyHomePageState extends State<MyHomePage> {
       case _View.days:
         List<Widget> ch = [];
         for (int i=0; i<_days.length; i++) {
-          Widget w = new Padding(child: new Row(children: <Widget>[new FlatButton(child: new Text(_days[i]['date']),
-                                                                                  onPressed: _currentDateSetter(i))],
-                                                mainAxisSize: MainAxisSize.max,
-                                                mainAxisAlignment: MainAxisAlignment.spaceBetween),
-                                 padding: const EdgeInsets.all(12.0),);
+          Widget w = new Padding(child: new Row(children: <Widget>[
+            new FlatButton(
+                child: new Text(_days[i]['date']),
+                onPressed: _currentDateSetter(i))],
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween),
+              padding: const EdgeInsets.all(12.0),);
           ch.add(w);
         }
         body = new ListView(children: ch);
@@ -811,20 +813,22 @@ class _MyHomePageState extends State<MyHomePage> {
       case _View.days:
         List<Widget> ch = [];
         for (int i=0; i<_days.length; i++) {
-          Widget w = new Padding(child: new Row(children: <Widget>[new FlatButton(child: new Text(_days[i]['date']),
-                                                                                  onPressed: _currentDateSetter(i)),
-                                                                   new FlatButton(child: deleteIcon,
-                                                                                  onPressed: () async {
-                                                                                    var ok = await confirmDialog(context, "Really delete day ${_days[i]['date']}?", 'DELETE');
-                                                                                    if (ok != null && ok) {
-                                                                                      _writeState(() {
-                                                                                          _days.removeAt(i);
-                                                                                        });
-                                                                                    }
-                                                                                  },)],
-                                                mainAxisSize: MainAxisSize.max,
-                                                mainAxisAlignment: MainAxisAlignment.spaceBetween),
-                                 padding: const EdgeInsets.all(12.0),);
+          Widget w = new Padding(child: new Row(children: <Widget>[
+            new FlatButton(child: new Text(_days[i]['date']),
+                onPressed: _currentDateSetter(i)),
+            new FlatButton(child: deleteIcon,
+                onPressed: () async {
+                  var ok = await confirmDialog(context,
+                      "Really delete day ${_days[i]['date']}?", 'DELETE');
+                  if (ok != null && ok) {
+                    _writeState(() {
+                      _days.removeAt(i);
+                    });
+                  }
+                },)],
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween),
+              padding: const EdgeInsets.all(12.0),);
           ch.add(w);
         }
         body = new ListView(children: ch);
