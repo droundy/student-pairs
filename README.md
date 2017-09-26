@@ -6,6 +6,9 @@ An app for managing a pair-programming classroom.
 
 ## 0.0.10
 
+- Fix bug where one user setting the week number simultaneously
+  affects the views of other concurrent users of the app.
+
 ## 0.0.9
 
 - Nicer icon with bigger light bulb.
