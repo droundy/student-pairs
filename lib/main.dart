@@ -85,6 +85,7 @@ int toint(_View v) {
     case _View.days:
       return 3;
   }
+  return 0;
 }
 
 final Widget authorizedUserIcon = new Icon(Icons.face);
@@ -332,15 +333,6 @@ class _MyHomePageState extends State<MyHomePage> {
     return d[student];
   }
 
-  Map _lookupDay(String day) {
-    for (int i = 0; i < _days.length; i++) {
-      if (_days[i].contains('date') && _days[i]['date'] == day) {
-        return _days[i];
-      }
-    }
-    return null;
-  }
-
   Map _todayStudent(String student, [Map day]) {
     if (day == null) day = _today();
     if (day == null) return {};
@@ -433,7 +425,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (day == null) day = _today();
     if (day == null) return [];
     String section = _todayStudentSection(student);
-    if (!_sections.contains(section)) return Set();
+    if (!_sections.contains(section)) return [];
     List<String> partners = new List.from(
         _students.where((s) => _todayStudentSection(s) == section));
     partners.remove(student);
@@ -550,7 +542,7 @@ class _MyHomePageState extends State<MyHomePage> {
     teamOptions.sort();
     String current = _todayStudentTeam(s);
     if (teamOptions.length == 0) return new Text('');
-    List<PopupMenuItem> pmis = [];
+    List<PopupMenuItem<String>> pmis = [];
     teamOptions.forEach((i) {
       pmis.add(new PopupMenuItem<String>(value: i, child: _teamLabel(i, s)));
     });
@@ -745,7 +737,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget _studentsMenu(List<String> items, String current, String team,
       void onchange(String newval)) {
     if (items.length == 0) return new Text('');
-    List<PopupMenuItem> pmis = [];
+    List<PopupMenuItem<String>> pmis = [];
     items.forEach((i) {
       pmis.add(
           new PopupMenuItem<String>(value: i, child: _studentLabel(i, team)));
@@ -1086,11 +1078,12 @@ class _MyHomePageState extends State<MyHomePage> {
       },
     );
   }
+
   Widget editButton(String item, void rename(String)) {
     return new FlatButton(
       child: editIcon,
       onPressed: () async {
-        String newname = await textInputDialog(context, "Rename $item to:", 'RENAME');
+        String newname = await textInputDialog(context, "Rename $item to:");
         if (newname != null) {
           await _writeState(() {
             rename(newname);
@@ -1206,7 +1199,7 @@ final menuIcon = new Icon(Icons.more_vert);
 Widget alternativesMenu(
     List<String> items, String current, void onchange(String newval)) {
   if (items.length == 0) return new Text('');
-  List<PopupMenuItem> pmis = [];
+  List<PopupMenuItem<String>> pmis = [];
   for (int i = 0; i < items.length; i++) {
     pmis.add(
         new PopupMenuItem<String>(value: items[i], child: new Text(items[i])));
