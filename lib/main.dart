@@ -554,6 +554,32 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void _renameDay(String oldname, String newname) {
+    _writeState(() {
+      _days.forEach((d) {
+            if (d['date'] == oldname) {
+              d['date'] = newname;
+            }
+          });
+    });
+  }
+
+  void _renameSection(String oldname, String newname) {
+    _writeState(() {
+      int i = _sections.indexOf(oldname);
+      _sections[i] = newname;
+      _days.forEach((d) {
+            if (d.containsKey('students')) {
+              d['students'].forEach((String k, Map s) {
+                if (s.containsKey('section') && s['section'] == oldname) {
+                  s['section'] = newname;
+                }
+              });
+            }
+          });
+    });
+  }
+
   Widget _sectionMenuForStudent(String s) {
     List<String> sectionOptions = new List.from(_sections)..add('absent');
     return alternativesMenu(sectionOptions, _todayStudentSection(s), (n) {
@@ -885,19 +911,13 @@ class _MyHomePageState extends State<MyHomePage> {
               .map((s) => new Padding(
                     child: new Row(
                         children: <Widget>[
-                          new Text(s),
-                          new FlatButton(
-                            child: deleteIcon,
-                            onPressed: () async {
-                              var ok = await confirmDialog(context,
-                                  'Really delete section $s?', 'DELETE');
-                              if (ok != null && ok) {
-                                _writeState(() {
-                                  _sections.remove(s);
-                                });
-                              }
-                            },
-                          )
+                          new Expanded(child: new Text(s)),
+                          editButton('section $s', (String newval) {
+                            _renameSection(s, newval);
+                          }),
+                          deleteButton('section $s', () {
+                            _sections.remove(s);
+                          }),
                         ],
                         mainAxisSize: MainAxisSize.max,
                         mainAxisAlignment: MainAxisAlignment.spaceBetween),
@@ -919,18 +939,12 @@ class _MyHomePageState extends State<MyHomePage> {
                             _currentDate = i;
                           });
                         }),
-                    new FlatButton(
-                      child: deleteIcon,
-                      onPressed: () async {
-                        var ok = await confirmDialog(context,
-                            "Really delete day ${_days[i]['date']}?", 'DELETE');
-                        if (ok != null && ok) {
-                          _writeState(() {
-                            _days.removeAt(i);
-                          });
-                        }
-                      },
-                    )
+                    editButton('day ${_days[i]['date']}', (String newval) {
+                      _renameDay(_days[i]['date'], newval);
+                    }),
+                    deleteButton('day ${_days[i]['date']}', () {
+                      _days.removeAt(i);
+                    }),
                   ],
                   mainAxisSize: MainAxisSize.max,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween),
