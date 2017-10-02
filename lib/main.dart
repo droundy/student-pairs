@@ -522,6 +522,38 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void _renameTeam(String oldname, String newname) {
+    _writeState(() {
+      int i = _teams.indexOf(oldname);
+      _teams[i] = newname;
+      _days.forEach((d) {
+            if (d.containsKey('students')) {
+              d['students'].forEach((String k, Map s) {
+                if (s.containsKey('team') && s['team'] == oldname) {
+                  s['team'] = newname;
+                }
+              });
+            }
+          });
+    });
+  }
+
+  void _renameStudent(String oldname, String newname) {
+    _writeState(() {
+      int i = _students.indexOf(oldname);
+      _students[i] = newname;
+      _days.forEach((d) {
+            if (d.containsKey('students')) {
+              if (d['students'].containsKey(oldname)) {
+                final Map v = d['students'][oldname];
+                d['students'].remove(oldname);
+                d['students'][newname] = v;
+              }
+            }
+          });
+    });
+  }
+
   Widget _sectionMenuForStudent(String s) {
     List<String> sectionOptions = new List.from(_sections)..add('absent');
     return alternativesMenu(sectionOptions, _todayStudentSection(s), (n) {
@@ -833,7 +865,10 @@ class _MyHomePageState extends State<MyHomePage> {
               .map((s) => new Padding(
                     child: new Row(
                         children: <Widget>[
-                          _studentLabel(s),
+                          new Expanded(child: _studentLabel(s)),
+                          editButton('student $s', (String newval) {
+                            _renameStudent(s, newval);
+                          }),
                           deleteButton('student $s', () {
                             _students.remove(s);
                           }),
@@ -912,19 +947,15 @@ class _MyHomePageState extends State<MyHomePage> {
             Widget w = new Padding(
               child: new Row(
                   children: <Widget>[
-                    new Text(team),
-                    new FlatButton(
-                      child: deleteIcon,
-                      onPressed: () async {
-                        var ok = await confirmDialog(
-                            context, "Really delete team $team?", 'DELETE');
-                        if (ok != null && ok) {
-                          _writeState(() {
-                            _teams.removeAt(i);
-                          });
-                        }
-                      },
-                    )
+                    new Expanded(child: new Text(team)),
+                    editButton('team $team', (String newval) {
+                      _renameTeam(team, newval);
+                    }),
+                    deleteButton('Really delete team $team?', () {
+                      _writeState(() {
+                        _teams.removeAt(i);
+                      });
+                    }),
                   ],
                   mainAxisSize: MainAxisSize.max,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween),
