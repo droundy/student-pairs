@@ -16,11 +16,9 @@
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
    02110-1301 USA */
 
-import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 
 import 'package:google_sign_in/google_sign_in.dart';
@@ -101,19 +99,17 @@ final Widget editIcon = new Icon(Icons.edit);
 
 class _MyHomePageState extends State<MyHomePage> {
   _View _view = _View.students;
-  List<String> _authorized_users = [];
+  List<String> _authorizedUsers = [];
   List<String> _students = [];
   List<String> _sections = [];
   List<String> _teams = [];
   List<Map> _days = [];
   int _currentDate = 0;
-  FirebaseUser _user = null;
-  DatabaseReference _courseNameRef = null;
-  StreamSubscription<Event> _courseNameSubscription;
+  FirebaseUser _user;
+  DatabaseReference _courseNameRef;
   String _courseName;
 
-  DatabaseReference _courseRef = null;
-  StreamSubscription<Event> _courseSubscription;
+  DatabaseReference _courseRef;
 
   Future<FirebaseUser> _signInWithGoogle() async {
     _user = await _auth.currentUser();
@@ -129,21 +125,20 @@ class _MyHomePageState extends State<MyHomePage> {
       assert(!_user.isAnonymous);
       assert(await _user.getToken() != null);
     }
-    final user_ref =
+    final DatabaseReference userRef =
         FirebaseDatabase.instance.reference().child('users').child(_user.uid);
-    user_ref.child('displayname').set(_user.displayName);
-    user_ref.child('email').set(_user.email);
+    userRef.child('displayname').set(_user.displayName);
+    userRef.child('email').set(_user.email);
     print('userid for ${_user.displayName} is ${_user.uid}');
-    _courseNameRef = user_ref.child('coursename');
+    _courseNameRef = userRef.child('coursename');
     _courseNameRef.keepSynced(true);
-    _courseNameSubscription = _courseNameRef.onValue.listen((Event event) {
+    _courseNameRef.onValue.listen((Event event) {
       setState(() {
         _courseName = event.snapshot.value;
         print('coursename is now $_courseName');
         if (_courseName == null) {
           _courseRef = null;
-          _courseSubscription = null;
-          _authorized_users = [];
+          _authorizedUsers = [];
           _students = [];
           _sections = [];
           _teams = [];
@@ -163,11 +158,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   _currentDate = snap.value ?? -1;
                 });
               });
-          _courseSubscription = _courseRef.onValue.listen((Event event) {
+          _courseRef.onValue.listen((Event event) {
             // print('course changed? to ${event.snapshot.value}');
             if (event.snapshot.value == null) {
               Map authmap = {};
-              _authorized_users.forEach((u) {
+              _authorizedUsers.forEach((u) {
                 authmap[u] = true;
               });
               _courseRef.set({
@@ -180,13 +175,13 @@ class _MyHomePageState extends State<MyHomePage> {
               });
             } else {
               setState(() {
-                _authorized_users = [];
+                _authorizedUsers = [];
                 (event.snapshot.value['authorized_users'] ?? {})
                     .forEach((u, x) {
-                  _authorized_users.add(u);
+                  _authorizedUsers.add(u);
                 });
-                if (!_authorized_users.contains(_user.uid)) {
-                  _authorized_users.add(_user.uid);
+                if (!_authorizedUsers.contains(_user.uid)) {
+                  _authorizedUsers.add(_user.uid);
                 }
                 _students = (event.snapshot.value['students'] ?? [])
                     .toList(growable: true);
@@ -219,7 +214,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _students.sort();
     if (_courseRef != null && _students.length > 0) {
       Map authmap = {};
-      _authorized_users.forEach((u) {
+      _authorizedUsers.forEach((u) {
         authmap[u] = true;
       });
       _courseRef.set({
@@ -343,6 +338,7 @@ class _MyHomePageState extends State<MyHomePage> {
         return _days[i];
       }
     }
+    return null;
   }
 
   Map _todayStudent(String student, [Map day]) {
@@ -389,6 +385,7 @@ class _MyHomePageState extends State<MyHomePage> {
           _todayStudentSection(s, day) == section &&
           _todayStudentTeam(s, day) == team) return s;
     }
+    return null;
   }
 
   List<String> _teamsAvailable() {
@@ -452,25 +449,26 @@ class _MyHomePageState extends State<MyHomePage> {
       String p = _findPartner(student, past);
       if (p != null) partners.remove(p);
     }
+    return [];
   }
 
   void _fixUpSection(String section) {
     Map teams = _teamsForSection(section);
     List<String> students = new List.from(
         _students.where((s) => _todayStudentSection(s) == section));
-    List<String> students_handled = new List.from([]);
-    List<String> students_remaining = new List.from(students);
+    List<String> studentsHandled = new List.from([]);
+    List<String> studentsRemaining = new List.from(students);
     teams.forEach((t, stu) {
       for (String s in stu) {
-        students_handled.add(s);
-        students_remaining.remove(s);
+        studentsHandled.add(s);
+        studentsRemaining.remove(s);
       }
     });
     List<String> teamsavailable = _teamsAvailable();
     teamsavailable.forEach((t) {
-      if (students_remaining.length > 0) {
+      if (studentsRemaining.length > 0) {
         List<String> ss = new List.from(_lastWeekStudentInTeam(t)
-            .where((s) => students_remaining.contains(s)));
+            .where((s) => studentsRemaining.contains(s)));
         List<String> sss = new List.from(
             ss.where((s) => !_previousWeekStudentInTeam(t).contains(s)));
         if (sss.length > 0) {
@@ -479,8 +477,8 @@ class _MyHomePageState extends State<MyHomePage> {
         if (ss.length > 0) {
           String s = ss[_random.nextInt(ss.length)];
           _todayStudent(s)['team'] = t;
-          students_handled.add(s);
-          students_remaining.remove(s);
+          studentsHandled.add(s);
+          studentsRemaining.remove(s);
         }
       }
     });
@@ -488,30 +486,30 @@ class _MyHomePageState extends State<MyHomePage> {
     teams.forEach((t, stu) {
       if (stu.length == 1) {
         List<String> parts = new List.from(_possiblePartnersForStudent(stu[0])
-            .where((s) => students_remaining.contains(s)));
+            .where((s) => studentsRemaining.contains(s)));
         print('possible partners for ${stu[0]}: $parts');
         if (parts.length > 0) {
           String p = parts[_random.nextInt(parts.length)];
           _todayStudent(p)['team'] = t;
-          students_remaining.remove(p);
-          students_handled.add(p);
+          studentsRemaining.remove(p);
+          studentsHandled.add(p);
         }
       }
     });
     teamsavailable = _teamsAvailable();
     teamsavailable.forEach((t) {
-      if (students_remaining.length > 0) {
+      if (studentsRemaining.length > 0) {
         String s =
-            students_remaining[_random.nextInt(students_remaining.length)];
+            studentsRemaining[_random.nextInt(studentsRemaining.length)];
         _todayStudent(s)['team'] = t;
-        students_handled.add(s);
-        students_remaining.remove(s);
+        studentsHandled.add(s);
+        studentsRemaining.remove(s);
         List<String> parts = _possiblePartnersForStudent(s);
         if (parts.length > 0) {
           String p = parts[_random.nextInt(parts.length)];
           _todayStudent(p)['team'] = t;
-          students_remaining.remove(p);
-          students_handled.add(p);
+          studentsRemaining.remove(p);
+          studentsHandled.add(p);
         }
       }
     });
@@ -533,8 +531,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _sectionMenuForStudent(String s) {
-    List<String> section_options = new List.from(_sections)..add('absent');
-    return alternativesMenu(section_options, _todayStudentSection(s), (n) {
+    List<String> sectionOptions = new List.from(_sections)..add('absent');
+    return alternativesMenu(sectionOptions, _todayStudentSection(s), (n) {
       _writeState(() {
         _todayStudent(s)['section'] = n;
       });
@@ -542,18 +540,18 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _teamMenuForStudent(String s) {
-    List<String> team_options = new List.from(_teamsAvailable())..add('-');
+    List<String> teamOptions = new List.from(_teamsAvailable())..add('-');
     String section = _todayStudentSection(s);
     _teamsForSection(section).forEach((t, stu) {
       if (stu.length < 2 || stu.contains(s)) {
-        team_options.add(t);
+        teamOptions.add(t);
       }
     });
-    team_options.sort();
+    teamOptions.sort();
     String current = _todayStudentTeam(s);
-    if (team_options.length == 0) return new Text('');
+    if (teamOptions.length == 0) return new Text('');
     List<PopupMenuItem> pmis = [];
-    team_options.forEach((i) {
+    teamOptions.forEach((i) {
       pmis.add(new PopupMenuItem<String>(value: i, child: _teamLabel(i, s)));
     });
     Widget cw = menuIcon;
@@ -571,19 +569,19 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   List<String> _lastWeekStudentInTeam(String team) {
-    int last_week = _currentDate - 1;
-    if (last_week >= 0) {
+    int lastWeek = _currentDate - 1;
+    if (lastWeek >= 0) {
       return new List.from(_students
-          .where((s) => _todayStudentTeam(s, _days[last_week]) == team));
+          .where((s) => _todayStudentTeam(s, _days[lastWeek]) == team));
     }
     return [];
   }
 
   List<String> _previousWeekStudentInTeam(String team) {
-    int last_week = _currentDate - 2;
-    if (last_week >= 0) {
+    int lastWeek = _currentDate - 2;
+    if (lastWeek >= 0) {
       return new List.from(_students
-          .where((s) => _todayStudentTeam(s, _days[last_week]) == team));
+          .where((s) => _todayStudentTeam(s, _days[lastWeek]) == team));
     }
     return [];
   }
@@ -597,11 +595,11 @@ class _MyHomePageState extends State<MyHomePage> {
       if (pteam != team && _teams.contains(pteam)) possibleStudents.remove(p);
     }
 
-    List<String> allow_removal(List<String> o) {
+    List<String> allowRemoval(List<String> o) {
       return new List.from(o)..add('remove');
     }
 
-    set_student([String other]) {
+    setStudent([String other]) {
       Future<Null> setter(String newstudent) async {
         await _writeState(() {
           for (String x in _students) {
@@ -619,44 +617,42 @@ class _MyHomePageState extends State<MyHomePage> {
 
     if (currentStudents.length == 0) {
       return [
-        _studentsMenu(possibleStudents, '-', team, set_student()),
+        _studentsMenu(possibleStudents, '-', team, setStudent()),
         new Text('')
       ];
     }
-    List<String> student_options =
+    List<String> studentOptions =
         new List.from(_possiblePartnersForStudent(currentStudents[0]));
     if (currentStudents.length == 1) {
       String s = currentStudents[0];
       return [
-        _studentsMenu(allow_removal(possibleStudents), s, team, set_student()),
-        _studentsMenu(student_options, null, team, set_student(s)),
+        _studentsMenu(allowRemoval(possibleStudents), s, team, setStudent()),
+        _studentsMenu(studentOptions, null, team, setStudent(s)),
       ];
     }
     return [
       _studentsMenu(
-          allow_removal(_possiblePartnersForStudent(currentStudents[1])),
+          allowRemoval(_possiblePartnersForStudent(currentStudents[1])),
           currentStudents[0],
           team,
-          set_student(currentStudents[1])),
+          setStudent(currentStudents[1])),
       _studentsMenu(
-          allow_removal(_possiblePartnersForStudent(currentStudents[0])),
+          allowRemoval(_possiblePartnersForStudent(currentStudents[0])),
           currentStudents[1],
           team,
-          set_student(currentStudents[0])),
+          setStudent(currentStudents[0])),
     ];
   }
 
-  Widget _studentTable(List<String> students_to_list) {
+  Widget _studentTable(List<String> studentsToList) {
     List<DataColumn> columns = <DataColumn>[
       new DataColumn(label: studentIcon),
       new DataColumn(label: sectionIcon),
       new DataColumn(label: teamIcon),
     ];
     List<DataRow> rows = [];
-    for (int i = 0; i < students_to_list.length; i++) {
-      String s = students_to_list[i];
-      String s_section = _todayStudentSection(s);
-      String s_team = _todayStudentTeam(s);
+    for (int i = 0; i < studentsToList.length; i++) {
+      String s = studentsToList[i];
       rows.add(new DataRow(cells: <DataCell>[
         new DataCell(_studentLabel(s)),
         new DataCell(_sectionMenuForStudent(s)),
@@ -673,17 +669,17 @@ class _MyHomePageState extends State<MyHomePage> {
       new DataColumn(label: new Icon(Icons.person)),
     ];
     List<DataRow> rows = [];
-    Map teams_map = _teamsForSection(section);
-    List<String> teams = new List.from(teams_map.keys);
+    Map teamsMap = _teamsForSection(section);
+    List<String> teams = new List.from(teamsMap.keys);
     teams.sort();
     teams.forEach((team) {
-      List<String> students = teams_map[team];
-      List<Widget> student_menus =
+      List<String> students = teamsMap[team];
+      List<Widget> studentMenus =
           _studentMenusForTeam(section, team, students);
       rows.add(new DataRow(cells: <DataCell>[
         new DataCell(new Text(team)),
-        new DataCell(student_menus[0]),
-        new DataCell(student_menus[1]),
+        new DataCell(studentMenus[0]),
+        new DataCell(studentMenus[1]),
       ]));
     });
     return new DataTable(columns: columns, rows: rows);
@@ -696,16 +692,16 @@ class _MyHomePageState extends State<MyHomePage> {
     if (team == '-') {
       return new Text(student);
     }
-    String yesterday_team = null;
-    String previous_team = null;
+    String yesterdayTeam;
+    String previousTeam;
     if (_currentDate - 1 >= 0) {
-      yesterday_team = _todayStudentTeam(student, _days[_currentDate - 1]);
+      yesterdayTeam = _todayStudentTeam(student, _days[_currentDate - 1]);
       if (_currentDate - 2 >= 0) {
-        previous_team = _todayStudentTeam(student, _days[_currentDate - 2]);
+        previousTeam = _todayStudentTeam(student, _days[_currentDate - 2]);
       }
     }
-    if (team == yesterday_team) {
-      if (team == previous_team) {
+    if (team == yesterdayTeam) {
+      if (team == previousTeam) {
         return new Text(student,
             style: new TextStyle(
                 fontWeight: FontWeight.bold, fontStyle: FontStyle.italic));
@@ -713,7 +709,7 @@ class _MyHomePageState extends State<MyHomePage> {
       return new Text(student,
           style: new TextStyle(fontWeight: FontWeight.bold));
     }
-    if (team == previous_team) {
+    if (team == previousTeam) {
       return new Text(student,
           style: new TextStyle(fontStyle: FontStyle.italic));
     }
@@ -724,23 +720,23 @@ class _MyHomePageState extends State<MyHomePage> {
     if (student == null) {
       return new Text(team);
     }
-    String yesterday_team = null;
-    String previous_team = null;
+    String yesterdayTeam;
+    String previousTeam;
     if (_currentDate - 1 >= 0) {
-      yesterday_team = _todayStudentTeam(student, _days[_currentDate - 1]);
+      yesterdayTeam = _todayStudentTeam(student, _days[_currentDate - 1]);
       if (_currentDate - 2 >= 0) {
-        previous_team = _todayStudentTeam(student, _days[_currentDate - 2]);
+        previousTeam = _todayStudentTeam(student, _days[_currentDate - 2]);
       }
     }
-    if (team == yesterday_team) {
-      if (team == previous_team) {
+    if (team == yesterdayTeam) {
+      if (team == previousTeam) {
         return new Text(team,
             style: new TextStyle(
                 fontWeight: FontWeight.bold, fontStyle: FontStyle.italic));
       }
       return new Text(team, style: new TextStyle(fontWeight: FontWeight.bold));
     }
-    if (team == previous_team) {
+    if (team == previousTeam) {
       return new Text(team, style: new TextStyle(fontStyle: FontStyle.italic));
     }
     return new Text(team);
@@ -786,21 +782,21 @@ class _MyHomePageState extends State<MyHomePage> {
         case _View.sections:
           List<Widget> tables = [];
           for (int i = 0; i < _sections.length; i++) {
-            List students_section = new List.from(_students
+            List studentsSection = new List.from(_students
                 .where((s) => _todayStudentSection(s) == _sections[i]));
-            if (students_section.length > 0) {
-              tables.add(_studentTable(students_section));
+            if (studentsSection.length > 0) {
+              tables.add(_studentTable(studentsSection));
             }
           }
-          List students_absent = new List.from(
+          List studentsAbsent = new List.from(
               _students.where((s) => _todayStudentSection(s) == 'absent'));
-          if (students_absent.length > 0) {
-            tables.add(_studentTable(students_absent));
+          if (studentsAbsent.length > 0) {
+            tables.add(_studentTable(studentsAbsent));
           }
-          List students_unassigned = new List.from(
+          List studentsUnassigned = new List.from(
               _students.where((s) => _todayStudentSection(s) == '-'));
-          if (students_unassigned.length > 0) {
-            tables.add(_studentTable(students_unassigned));
+          if (studentsUnassigned.length > 0) {
+            tables.add(_studentTable(studentsUnassigned));
           }
           body = new ListView(children: tables);
           break;
@@ -954,17 +950,17 @@ class _MyHomePageState extends State<MyHomePage> {
       courseNameButton = _courseName;
     }
 
-    String current_day_text = 'manage';
+    String currentDayText = 'manage';
     if (_amViewingDate()) {
-      current_day_text = _days[_currentDate]['date'];
+      currentDayText = _days[_currentDate]['date'];
     }
     Icon floatingActionIcon = new Icon(Icons.add);
     var floatingActionOnPressed = add;
-    if (current_day_text != 'manage' && _view != _View.days) {
+    if (currentDayText != 'manage' && _view != _View.days) {
       floatingActionIcon = scrambleIcon;
       floatingActionOnPressed = scramble;
     }
-    List<String> day_options = new List.from(_days.map((d) => d['date']))
+    List<String> dayOptions = new List.from(_days.map((d) => d['date']))
       ..insert(0, 'manage');
     return new Scaffold(
       appBar: new AppBar(
@@ -977,9 +973,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 }
               });
             }),
-        // title: alternativesMenu(day_options, current_day_text,
+        // title: alternativesMenu(dayOptions, currentDayText,
         //     (String s) async {
-        //       await _writeState(() { _currentDate = day_options.indexOf(s) - 1; });
+        //       await _writeState(() { _currentDate = dayOptions.indexOf(s) - 1; });
         //     }),
         // title: new Text(title),
         actions: [
@@ -990,17 +986,17 @@ class _MyHomePageState extends State<MyHomePage> {
                     .reference()
                     .child('users')
                     .once();
-                List<Map> all_users = [];
-                List<Map> auth_users = [];
+                List<Map> allUsers = [];
+                List<Map> authUsers = [];
                 users.value.forEach((u, data) {
-                  if (_authorized_users.contains(u)) {
-                    auth_users.add({
+                  if (_authorizedUsers.contains(u)) {
+                    authUsers.add({
                       'uid': u,
                       'name': data['displayname'],
                       'email': data['email']
                     });
                   } else {
-                    all_users.add({
+                    allUsers.add({
                       'uid': u,
                       'name': data['displayname'],
                       'email': data['email']
@@ -1008,19 +1004,19 @@ class _MyHomePageState extends State<MyHomePage> {
                   }
                 });
                 String uid = await promptUserDialog(
-                    context, '$_courseName users', auth_users, all_users);
+                    context, '$_courseName users', authUsers, allUsers);
                 if (uid != null) {
                   _writeState(() {
-                    _authorized_users.add(uid);
+                    _authorizedUsers.add(uid);
                   });
                 }
               }),
           new Center(
               // widthFactor: 1.2,
-              child: alternativesMenu(day_options, current_day_text,
+              child: alternativesMenu(dayOptions, currentDayText,
                   (String s) async {
             await _writeState(() {
-              _currentDate = day_options.indexOf(s) - 1;
+              _currentDate = dayOptions.indexOf(s) - 1;
             });
           })),
           new FlatButton(
