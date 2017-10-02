@@ -152,14 +152,16 @@ class _MyHomePageState extends State<MyHomePage> {
               .reference()
               .child('courses')
               .child(_courseName);
-          setState(() async {
-            // We initialize the _currentDate to the last saved value, but after
-            // that we do not *read* the _currentDate from the server.  This
-            // preserves the date across reboots, but does not let someone else
-            // (e.g. the TA) reset our current date while we are entering data.
-            _currentDate =
-                (await _courseRef.child('currentDate').once()).value ?? -1;
-          });
+          _courseRef.child('currentDate').once().then((snap) {
+                setState(() {
+                  // We initialize the _currentDate to the last saved value, but
+                  // after that we do not *read* the _currentDate from the
+                  // server.  This preserves the date across reboots, but does
+                  // not let someone else (e.g. the TA) reset our current date
+                  // while we are entering data.
+                  _currentDate = snap.value ?? -1;
+                });
+              });
           _courseSubscription = _courseRef.onValue.listen((Event event) {
             // print('course changed? to ${event.snapshot.value}');
             if (event.snapshot.value == null) {
