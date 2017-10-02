@@ -7,6 +7,7 @@ An app for managing a pair-programming classroom.
 ## 0.0.11
 
 - Fix bug in setting the week number initially.
+- Enable editing of names of teams, students, etc.
 
 ## 0.0.10
 
