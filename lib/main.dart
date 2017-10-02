@@ -97,6 +97,7 @@ final Widget sectionIcon = new Icon(Icons.assignment);
 final Widget teamIcon = new Icon(Icons.people);
 final Widget dayIcon = new Icon(Icons.schedule);
 final Widget deleteIcon = new Icon(Icons.delete);
+final Widget editIcon = new Icon(Icons.edit);
 
 class _MyHomePageState extends State<MyHomePage> {
   _View _view = _View.students;
@@ -1084,6 +1085,19 @@ class _MyHomePageState extends State<MyHomePage> {
         if (ok != null && ok) {
           await _writeState(() {
             handleDelete();
+          });
+        }
+      },
+    );
+  }
+  Widget editButton(String item, void rename(String)) {
+    return new FlatButton(
+      child: editIcon,
+      onPressed: () async {
+        String newname = await textInputDialog(context, "Rename $item to:", 'RENAME');
+        if (newname != null) {
+          await _writeState(() {
+            rename(newname);
           });
         }
       },

@@ -4,6 +4,10 @@ An app for managing a pair-programming classroom.
 
 ## ChangeLog
 
+## 0.0.11
+
+- Fix bug in setting the week number initially.
+
 ## 0.0.10
 
 - Fix bug where one user setting the week number simultaneously
