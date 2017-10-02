@@ -1079,7 +1079,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget editButton(String item, void rename(String)) {
+  Widget editButton(String item, void rename(String newvalue)) {
     return new FlatButton(
       child: editIcon,
       onPressed: () async {
