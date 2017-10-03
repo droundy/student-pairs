@@ -4,6 +4,10 @@ An app for managing a pair-programming classroom.
 
 ## ChangeLog
 
+## 0.0.12
+
+- Fix button label on renaming dialog.
+
 ## 0.0.11
 
 - Fix bug in setting the week number initially.
