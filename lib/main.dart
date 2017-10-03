@@ -150,15 +150,15 @@ class _MyHomePageState extends State<MyHomePage> {
               .child('courses')
               .child(_courseName);
           _courseRef.child('currentDate').once().then((snap) {
-                setState(() {
-                  // We initialize the _currentDate to the last saved value, but
-                  // after that we do not *read* the _currentDate from the
-                  // server.  This preserves the date across reboots, but does
-                  // not let someone else (e.g. the TA) reset our current date
-                  // while we are entering data.
-                  _currentDate = snap.value ?? -1;
-                });
-              });
+            setState(() {
+              // We initialize the _currentDate to the last saved value, but
+              // after that we do not *read* the _currentDate from the
+              // server.  This preserves the date across reboots, but does
+              // not let someone else (e.g. the TA) reset our current date
+              // while we are entering data.
+              _currentDate = snap.value ?? -1;
+            });
+          });
           _courseRef.onValue.listen((Event event) {
             // print('course changed? to ${event.snapshot.value}');
             if (event.snapshot.value == null) {
@@ -491,8 +491,7 @@ class _MyHomePageState extends State<MyHomePage> {
     teamsavailable = _teamsAvailable();
     teamsavailable.forEach((t) {
       if (studentsRemaining.length > 0) {
-        String s =
-            studentsRemaining[_random.nextInt(studentsRemaining.length)];
+        String s = studentsRemaining[_random.nextInt(studentsRemaining.length)];
         _todayStudent(s)['team'] = t;
         studentsHandled.add(s);
         studentsRemaining.remove(s);
@@ -527,14 +526,14 @@ class _MyHomePageState extends State<MyHomePage> {
       int i = _teams.indexOf(oldname);
       _teams[i] = newname;
       _days.forEach((d) {
-            if (d.containsKey('students')) {
-              d['students'].forEach((String k, Map s) {
-                if (s.containsKey('team') && s['team'] == oldname) {
-                  s['team'] = newname;
-                }
-              });
+        if (d.containsKey('students')) {
+          d['students'].forEach((String k, Map s) {
+            if (s.containsKey('team') && s['team'] == oldname) {
+              s['team'] = newname;
             }
           });
+        }
+      });
     });
   }
 
@@ -543,24 +542,24 @@ class _MyHomePageState extends State<MyHomePage> {
       int i = _students.indexOf(oldname);
       _students[i] = newname;
       _days.forEach((d) {
-            if (d.containsKey('students')) {
-              if (d['students'].containsKey(oldname)) {
-                final Map v = d['students'][oldname];
-                d['students'].remove(oldname);
-                d['students'][newname] = v;
-              }
-            }
-          });
+        if (d.containsKey('students')) {
+          if (d['students'].containsKey(oldname)) {
+            final Map v = d['students'][oldname];
+            d['students'].remove(oldname);
+            d['students'][newname] = v;
+          }
+        }
+      });
     });
   }
 
   void _renameDay(String oldname, String newname) {
     _writeState(() {
       _days.forEach((d) {
-            if (d['date'] == oldname) {
-              d['date'] = newname;
-            }
-          });
+        if (d['date'] == oldname) {
+          d['date'] = newname;
+        }
+      });
     });
   }
 
@@ -569,14 +568,14 @@ class _MyHomePageState extends State<MyHomePage> {
       int i = _sections.indexOf(oldname);
       _sections[i] = newname;
       _days.forEach((d) {
-            if (d.containsKey('students')) {
-              d['students'].forEach((String k, Map s) {
-                if (s.containsKey('section') && s['section'] == oldname) {
-                  s['section'] = newname;
-                }
-              });
+        if (d.containsKey('students')) {
+          d['students'].forEach((String k, Map s) {
+            if (s.containsKey('section') && s['section'] == oldname) {
+              s['section'] = newname;
             }
           });
+        }
+      });
     });
   }
 
@@ -724,8 +723,7 @@ class _MyHomePageState extends State<MyHomePage> {
     teams.sort();
     teams.forEach((team) {
       List<String> students = teamsMap[team];
-      List<Widget> studentMenus =
-          _studentMenusForTeam(section, team, students);
+      List<Widget> studentMenus = _studentMenusForTeam(section, team, students);
       rows.add(new DataRow(cells: <DataCell>[
         new DataCell(new Text(team)),
         new DataCell(studentMenus[0]),
@@ -1128,7 +1126,8 @@ class _MyHomePageState extends State<MyHomePage> {
     return new FlatButton(
       child: editIcon,
       onPressed: () async {
-        String newname = await textInputDialog(context, "Rename $item to:");
+        String newname = await textInputDialog(context, "Rename $item to:",
+            confirm: 'RENAME');
         if (newname != null) {
           await _writeState(() {
             rename(newname);
@@ -1139,7 +1138,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-Future<String> textInputDialog(BuildContext context, String title) async {
+Future<String> textInputDialog(BuildContext context, String title,
+    {String confirm = 'ADD'}) async {
   String foo;
   return showDialog(
     context: context,
@@ -1160,7 +1160,7 @@ Future<String> textInputDialog(BuildContext context, String title) async {
                 Navigator.pop(context, null);
               }),
           new FlatButton(
-              child: new Text('ADD'),
+              child: new Text(confirm),
               onPressed: () {
                 Navigator.pop(context, foo);
               }),
