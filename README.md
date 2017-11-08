@@ -4,6 +4,13 @@ An app for managing a pair-programming classroom.
 
 ## ChangeLog
 
+## 0.0.13
+
+- Change behavior such that changing the default student section will
+  not affect any days for which that student already has an assigned
+  team.  Note that this will only affect team assignments made by this
+  version or later.
+
 ## 0.0.12
 
 - Fix button label on renaming dialog.

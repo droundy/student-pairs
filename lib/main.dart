@@ -611,7 +611,18 @@ class _MyHomePageState extends State<MyHomePage> {
         itemBuilder: (BuildContext context) => pmis,
         onSelected: (n) {
           _writeState(() {
-            _todayStudent(s)['team'] = n;
+            Map todays = _todayStudent(s);
+            todays['team'] = n;
+            // The following sets the section to its default value if it is not
+            // yet defined for this day.  This ensures that if the default is
+            // later changed, it won't retroactively change days that have
+            // already passed.  Note: this does mean that there is potential
+            // harm in "planning ahead", since it inhibits the effects of
+            // changing the default section.
+            if (!todays.containsKey('section')) {
+              Map d = _studentDefault(s);
+              if (d.containsKey('section')) todays['section'] = d['section'];
+            }
           });
         });
   }
