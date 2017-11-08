@@ -25,6 +25,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 
+import 'package:share/share.dart';
+
 final GoogleSignIn _googleSignIn = new GoogleSignIn();
 final FirebaseAuth _auth = FirebaseAuth.instance;
 final _random = new Random(); // generates a new Random object
@@ -122,7 +124,6 @@ class _MyHomePageState extends State<MyHomePage> {
       assert(_user.displayName != null);
       assert(_user.uid != null);
       assert(!_user.isAnonymous);
-      assert(await _user.getToken() != null);
     }
     final DatabaseReference userRef =
         FirebaseDatabase.instance.reference().child('users').child(_user.uid);
