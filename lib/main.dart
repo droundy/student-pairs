@@ -1076,6 +1076,7 @@ class _MyHomePageState extends State<MyHomePage> {
         items: [
           new BottomNavigationBarItem(
             icon: studentIcon,
+            backgroundColor: Colors.blue,
             title: new Text("Students"),
           ),
           new BottomNavigationBarItem(

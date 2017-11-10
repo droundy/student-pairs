@@ -4,6 +4,8 @@ An app for managing a pair-programming classroom.
 
 ## ChangeLog
 
+## 0.0.14
+
 ## 0.0.13
 
 - Change behavior such that changing the default student section will
