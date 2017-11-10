@@ -6,6 +6,12 @@ An app for managing a pair-programming classroom.
 
 ## 0.0.14
 
+- Make bottom navigation icons visible.
+
+- Make undoing team reverse the fixing of the default section, so
+  later changes to the default section for the student will affect
+  that day.
+
 ## 0.0.13
 
 - Change behavior such that changing the default student section will
