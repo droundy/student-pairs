@@ -136,13 +136,15 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         _courseName = event.snapshot.value;
         print('coursename is now $_courseName');
+        // null out contents to avoid copying over items from one course to
+        // another.
+        _authorizedUsers = [];
+        _students = [];
+        _sections = [];
+        _teams = [];
+        _days = [];
         if (_courseName == null) {
           _courseRef = null;
-          _authorizedUsers = [];
-          _students = [];
-          _sections = [];
-          _teams = [];
-          _days = [];
         } else {
           _courseRef = FirebaseDatabase.instance
               .reference()
